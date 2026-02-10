@@ -487,6 +487,490 @@ async function handleGetServices(page: number, perPage: number, search: string |
   );
 }
 
+// Sale handlers
+async function handleGetSale(id: number): Promise<[Record<string, unknown>, Record<string, unknown>[], Record<string, unknown>[]]> {
+  const saleResult = await runQuery(
+    "SELECT id, customer_id, date, notes, currency_id, exchange_rate, total_amount, base_amount, paid_amount, additional_cost, order_discount_type, order_discount_value, order_discount_amount, discount_code_id, created_at, updated_at FROM sales WHERE id = ?",
+    [id]
+  );
+  const sales = rowsToObjects<Record<string, unknown>>(saleResult);
+  const sale = sales[0];
+  if (!sale) {
+    throw new Error("Sale not found");
+  }
+  const sumResult = await runQuery(
+    "SELECT COALESCE(SUM(amount), 0) AS additional_cost FROM sale_additional_costs WHERE sale_id = ?",
+    [id]
+  );
+  const sumRow = sumResult.rows[0];
+  const idx = sumResult.columns.indexOf("additional_cost");
+  sale.additional_cost = sumRow && idx >= 0 ? (sumRow[idx] as number) : 0;
+
+  const itemsResult = await runQuery(
+    "SELECT id, sale_id, product_id, unit_id, per_price, amount, total, purchase_item_id, sale_type, discount_type, discount_value, created_at FROM sale_items WHERE sale_id = ? ORDER BY id",
+    [id]
+  );
+  const items = rowsToObjects<Record<string, unknown>>(itemsResult);
+
+  const serviceItemsResult = await runQuery(
+    "SELECT id, sale_id, service_id, name, price, quantity, total, discount_type, discount_value, created_at FROM sale_service_items WHERE sale_id = ? ORDER BY id",
+    [id]
+  );
+  const serviceItems = rowsToObjects<Record<string, unknown>>(serviceItemsResult);
+
+  return [sale, items, serviceItems];
+}
+
+async function handleGetSaleItems(saleId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, sale_id, product_id, unit_id, per_price, amount, total, purchase_item_id, sale_type, discount_type, discount_value, created_at FROM sale_items WHERE sale_id = ? ORDER BY id",
+    [saleId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetSalePayments(saleId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, sale_id, account_id, currency_id, exchange_rate, amount, base_amount, date, created_at FROM sale_payments WHERE sale_id = ? ORDER BY date DESC, created_at DESC",
+    [saleId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetSaleAdditionalCosts(saleId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, sale_id, name, amount, created_at FROM sale_additional_costs WHERE sale_id = ? ORDER BY id",
+    [saleId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetPurchaseItems(purchaseId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, purchase_id, product_id, unit_id, per_price, amount, total, per_unit, cost_price, wholesale_price, retail_price, expiry_date, created_at FROM purchase_items WHERE purchase_id = ? ORDER BY id",
+    [purchaseId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+// Product stock handlers
+async function handleGetProductBatches(productId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    `SELECT 
+      pi.id AS purchase_item_id,
+      pi.purchase_id,
+      p.batch_number,
+      p.date AS purchase_date,
+      pi.expiry_date,
+      pi.per_price,
+      pi.per_unit,
+      pi.wholesale_price,
+      pi.retail_price,
+      pi.amount,
+      ROUND(((pi.amount * COALESCE(u_pi.ratio, 1)) - COALESCE(sold.sold_base, 0)) / COALESCE(u_pi.ratio, 1), 6) AS remaining_quantity
+    FROM purchase_items pi
+    INNER JOIN purchases p ON pi.purchase_id = p.id
+    LEFT JOIN units u_pi ON u_pi.id = pi.unit_id
+    LEFT JOIN (
+      SELECT si.purchase_item_id,
+        SUM(si.amount * COALESCE(u_si.ratio, 1)) AS sold_base
+      FROM sale_items si
+      LEFT JOIN units u_si ON u_si.id = si.unit_id
+      WHERE si.purchase_item_id IS NOT NULL
+      GROUP BY si.purchase_item_id
+    ) sold ON sold.purchase_item_id = pi.id
+    WHERE pi.product_id = ?
+    HAVING remaining_quantity > 0`,
+    [productId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetProductStock(productId: number, unitId: number | null): Promise<Record<string, unknown>> {
+  const stockResult = await runQuery(
+    `SELECT COALESCE(SUM(
+      GREATEST(0, (pi.amount * COALESCE(u_pi.ratio, 1)) - COALESCE(sold.sold_base, 0))
+    ), 0) AS total_base
+    FROM purchase_items pi
+    LEFT JOIN units u_pi ON u_pi.id = pi.unit_id
+    LEFT JOIN (
+      SELECT si.purchase_item_id,
+        SUM(si.amount * COALESCE(u_si.ratio, 1)) AS sold_base
+      FROM sale_items si
+      LEFT JOIN units u_si ON u_si.id = si.unit_id
+      WHERE si.purchase_item_id IS NOT NULL
+      GROUP BY si.purchase_item_id
+    ) sold ON sold.purchase_item_id = pi.id
+    WHERE pi.product_id = ?`,
+    [productId]
+  );
+  const totalBase = Number(stockResult.rows[0]?.[0] ?? 0);
+  
+  let totalInUnit = totalBase;
+  if (unitId) {
+    const unitResult = await runQuery("SELECT ratio FROM units WHERE id = ?", [unitId]);
+    const ratio = Number(unitResult.rows[0]?.[0] ?? 1);
+    totalInUnit = totalBase / ratio;
+  }
+  
+  return { total_base: totalBase, total_in_unit: totalInUnit };
+}
+
+async function handleGetStockByBatches(): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    `SELECT 
+      pi.product_id,
+      COALESCE(pr.name, '') AS product_name,
+      pi.id AS purchase_item_id,
+      pi.purchase_id,
+      p.batch_number,
+      p.date AS purchase_date,
+      pi.expiry_date,
+      COALESCE(u_pi.name, '') AS unit_name,
+      pi.amount,
+      ROUND(((pi.amount * COALESCE(u_pi.ratio, 1)) - COALESCE(sold.sold_base, 0)) / COALESCE(u_pi.ratio, 1), 6) AS remaining_quantity,
+      pi.per_price,
+      COALESCE(pi.cost_price, pi.per_price) AS cost_price,
+      pi.retail_price,
+      pi.wholesale_price
+    FROM purchase_items pi
+    INNER JOIN purchases p ON pi.purchase_id = p.id
+    LEFT JOIN units u_pi ON u_pi.id = pi.unit_id
+    LEFT JOIN products pr ON pr.id = pi.product_id
+    LEFT JOIN (
+      SELECT si.purchase_item_id,
+        SUM(si.amount * COALESCE(u_si.ratio, 1)) AS sold_base
+      FROM sale_items si
+      LEFT JOIN units u_si ON u_si.id = si.unit_id
+      WHERE si.purchase_item_id IS NOT NULL
+      GROUP BY si.purchase_item_id
+    ) sold ON sold.purchase_item_id = pi.id
+    HAVING remaining_quantity > 0`,
+    []
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+// Service handlers
+async function handleGetService(id: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, name, price, currency_id, description, created_at, updated_at FROM services WHERE id = ?",
+    [id]
+  );
+  const services = rowsToObjects<Record<string, unknown>>(result);
+  const service = services[0];
+  if (!service) {
+    throw new Error("Service not found");
+  }
+  return service;
+}
+
+// Expense handlers
+async function handleGetExpenseTypes(): Promise<Record<string, unknown>[]> {
+  const result = await runQuery("SELECT id, name, created_at, updated_at FROM expense_types ORDER BY name", []);
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleCreateExpenseType(name: string): Promise<Record<string, unknown>> {
+  await runExecute("INSERT INTO expense_types (name) VALUES (?)", [name]);
+  const result = await runQuery("SELECT id, name, created_at, updated_at FROM expense_types WHERE name = ?", [name]);
+  const types = rowsToObjects<Record<string, unknown>>(result);
+  const expenseType = types[0];
+  if (!expenseType) {
+    throw new Error("Failed to retrieve created expense type");
+  }
+  return expenseType;
+}
+
+async function handleUpdateExpenseType(id: number, name: string): Promise<Record<string, unknown>> {
+  await runExecute("UPDATE expense_types SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [name, id]);
+  const result = await runQuery("SELECT id, name, created_at, updated_at FROM expense_types WHERE id = ?", [id]);
+  const types = rowsToObjects<Record<string, unknown>>(result);
+  const expenseType = types[0];
+  if (!expenseType) {
+    throw new Error("Expense type not found");
+  }
+  return expenseType;
+}
+
+async function handleDeleteExpenseType(id: number): Promise<string> {
+  await runExecute("DELETE FROM expense_types WHERE id = ?", [id]);
+  return "Expense type deleted successfully";
+}
+
+async function handleGetExpenses(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
+  let where = "";
+  const params: unknown[] = [];
+  const allowedSort = ["date", "amount", "created_at"].includes(sortBy || "") ? sortBy! : "date";
+  const order = (sortOrder || "desc").toUpperCase() === "DESC" ? "DESC" : "ASC";
+  return paginated(
+    "expenses",
+    "*",
+    `SELECT COUNT(*) FROM expenses ${where}`,
+    `SELECT id, expense_type_id, amount, currency, rate, total, date, bill_no, description, created_at, updated_at FROM expenses ${where}`,
+    params,
+    page,
+    perPage,
+    `ORDER BY ${allowedSort} ${order}`
+  );
+}
+
+async function handleGetExpense(id: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, expense_type_id, amount, currency, rate, total, date, bill_no, description, created_at, updated_at FROM expenses WHERE id = ?",
+    [id]
+  );
+  const expenses = rowsToObjects<Record<string, unknown>>(result);
+  const expense = expenses[0];
+  if (!expense) {
+    throw new Error("Expense not found");
+  }
+  return expense;
+}
+
+// Employee handlers
+async function handleGetEmployees(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
+  let where = "";
+  const params: unknown[] = [];
+  if (search?.trim()) {
+    where = "WHERE (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)";
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+  const allowedSort = ["full_name", "created_at"].includes(sortBy || "") ? sortBy! : "created_at";
+  const order = (sortOrder || "desc").toUpperCase() === "DESC" ? "DESC" : "ASC";
+  return paginated(
+    "employees",
+    "*",
+    `SELECT COUNT(*) FROM employees ${where}`,
+    `SELECT id, full_name, phone, email, address, position, hire_date, base_salary, photo_path, notes, created_at, updated_at FROM employees ${where}`,
+    params,
+    page,
+    perPage,
+    `ORDER BY ${allowedSort} ${order}`
+  );
+}
+
+async function handleGetEmployee(id: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, full_name, phone, email, address, position, hire_date, base_salary, photo_path, notes, created_at, updated_at FROM employees WHERE id = ?",
+    [id]
+  );
+  const employees = rowsToObjects<Record<string, unknown>>(result);
+  const employee = employees[0];
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+  return employee;
+}
+
+// Salary handlers
+async function handleGetSalaries(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
+  let where = "";
+  const params: unknown[] = [];
+  const allowedSort = ["year", "month", "amount", "created_at"].includes(sortBy || "") ? sortBy! : "year";
+  const order = (sortOrder || "desc").toUpperCase() === "DESC" ? "DESC" : "ASC";
+  return paginated(
+    "salaries",
+    "*",
+    `SELECT COUNT(*) FROM salaries ${where}`,
+    `SELECT id, employee_id, year, month, amount, deductions, notes, created_at, updated_at FROM salaries ${where}`,
+    params,
+    page,
+    perPage,
+    `ORDER BY ${allowedSort} ${order}`
+  );
+}
+
+async function handleGetSalariesByEmployee(employeeId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, employee_id, year, month, amount, deductions, notes, created_at, updated_at FROM salaries WHERE employee_id = ? ORDER BY year DESC, month DESC",
+    [employeeId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetSalary(id: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, employee_id, year, month, amount, deductions, notes, created_at, updated_at FROM salaries WHERE id = ?",
+    [id]
+  );
+  const salaries = rowsToObjects<Record<string, unknown>>(result);
+  const salary = salaries[0];
+  if (!salary) {
+    throw new Error("Salary not found");
+  }
+  return salary;
+}
+
+// Deduction handlers
+async function handleGetDeduction(id: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, employee_id, year, month, currency, rate, amount, created_at, updated_at FROM deductions WHERE id = ?",
+    [id]
+  );
+  const deductions = rowsToObjects<Record<string, unknown>>(result);
+  const deduction = deductions[0];
+  if (!deduction) {
+    throw new Error("Deduction not found");
+  }
+  return deduction;
+}
+
+async function handleGetDeductionsByEmployee(employeeId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, employee_id, year, month, currency, rate, amount, created_at, updated_at FROM deductions WHERE employee_id = ? ORDER BY year DESC, month DESC",
+    [employeeId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetDeductionsByEmployeeYearMonth(employeeId: number, year: number, month: string): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, employee_id, year, month, currency, rate, amount, created_at, updated_at FROM deductions WHERE employee_id = ? AND year = ? AND month = ? ORDER BY created_at",
+    [employeeId, year, month]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+// Account handlers
+async function handleGetAccount(id: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, name, currency_id, coa_category_id, account_code, account_type, initial_balance, current_balance, is_active, notes, created_at, updated_at FROM accounts WHERE id = ?",
+    [id]
+  );
+  const accounts = rowsToObjects<Record<string, unknown>>(result);
+  const account = accounts[0];
+  if (!account) {
+    throw new Error("Account not found");
+  }
+  return { ...account, is_active: Number(account.is_active) === 1 };
+}
+
+async function handleGetAccountBalance(accountId: number): Promise<number> {
+  const result = await runQuery("SELECT current_balance FROM accounts WHERE id = ?", [accountId]);
+  return Number(result.rows[0]?.[0] ?? 0);
+}
+
+async function handleGetAccountTransactions(accountId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, account_id, transaction_type, amount, currency, rate, total, transaction_date, is_full, notes, created_at, updated_at FROM account_transactions WHERE account_id = ? ORDER BY transaction_date DESC, created_at DESC",
+    [accountId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result).map((row: Record<string, unknown>) => ({
+    ...row,
+    is_full: Number(row.is_full) === 1,
+  }));
+}
+
+async function handleGetAccountBalanceByCurrency(accountId: number, currencyId: number): Promise<Record<string, unknown>> {
+  const result = await runQuery(
+    "SELECT id, account_id, currency_id, balance, updated_at FROM account_currency_balances WHERE account_id = ? AND currency_id = ?",
+    [accountId, currencyId]
+  );
+  const balances = rowsToObjects<Record<string, unknown>>(result);
+  return balances[0] || { account_id: accountId, currency_id: currencyId, balance: 0 };
+}
+
+async function handleGetAllAccountBalances(): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, account_id, currency_id, balance, updated_at FROM account_currency_balances ORDER BY account_id, currency_id",
+    []
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+// Journal handlers
+async function handleGetJournalEntries(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
+  let where = "";
+  const params: unknown[] = [];
+  const allowedSort = ["entry_date", "entry_number", "created_at"].includes(sortBy || "") ? sortBy! : "entry_date";
+  const order = (sortOrder || "desc").toUpperCase() === "DESC" ? "DESC" : "ASC";
+  return paginated(
+    "journal_entries",
+    "*",
+    `SELECT COUNT(*) FROM journal_entries ${where}`,
+    `SELECT id, entry_number, entry_date, description, reference_type, reference_id, created_at, updated_at FROM journal_entries ${where}`,
+    params,
+    page,
+    perPage,
+    `ORDER BY ${allowedSort} ${order}`
+  );
+}
+
+async function handleGetJournalEntry(id: number): Promise<Record<string, unknown>> {
+  const entryResult = await runQuery(
+    "SELECT id, entry_number, entry_date, description, reference_type, reference_id, created_at, updated_at FROM journal_entries WHERE id = ?",
+    [id]
+  );
+  const entries = rowsToObjects<Record<string, unknown>>(entryResult);
+  const entry = entries[0];
+  if (!entry) {
+    throw new Error("Journal entry not found");
+  }
+  const linesResult = await runQuery(
+    "SELECT id, journal_entry_id, account_id, currency_id, debit_amount, credit_amount, exchange_rate, base_amount, description, created_at FROM journal_entry_lines WHERE journal_entry_id = ? ORDER BY id",
+    [id]
+  );
+  const lines = rowsToObjects<Record<string, unknown>>(linesResult);
+  return { ...entry, lines };
+}
+
+// Exchange rate handlers
+async function handleGetExchangeRate(fromCurrencyId: number, toCurrencyId: number, date: string | null): Promise<Record<string, unknown> | null> {
+  const sql = date
+    ? "SELECT id, from_currency_id, to_currency_id, rate, date, created_at FROM currency_exchange_rates WHERE from_currency_id = ? AND to_currency_id = ? AND date = ? ORDER BY created_at DESC LIMIT 1"
+    : "SELECT id, from_currency_id, to_currency_id, rate, date, created_at FROM currency_exchange_rates WHERE from_currency_id = ? AND to_currency_id = ? ORDER BY date DESC, created_at DESC LIMIT 1";
+  const params = date ? [fromCurrencyId, toCurrencyId, date] : [fromCurrencyId, toCurrencyId];
+  const result = await runQuery(sql, params);
+  const rates = rowsToObjects<Record<string, unknown>>(result);
+  return rates[0] || null;
+}
+
+async function handleGetExchangeRateHistory(fromCurrencyId: number, toCurrencyId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, from_currency_id, to_currency_id, rate, date, created_at FROM currency_exchange_rates WHERE from_currency_id = ? AND to_currency_id = ? ORDER BY date DESC, created_at DESC",
+    [fromCurrencyId, toCurrencyId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+// Discount code handlers
+async function handleGetDiscountCodes(search: string | null): Promise<Record<string, unknown>[]> {
+  let sql = "SELECT id, code, type, value, min_purchase, valid_from, valid_to, max_uses, use_count, created_at FROM sale_discount_codes";
+  const params: unknown[] = [];
+  
+  if (search?.trim()) {
+    sql += " WHERE code LIKE ?";
+    params.push(`%${search.trim()}%`);
+  }
+  
+  sql += " ORDER BY code ASC";
+  
+  const result = await runQuery(sql, params);
+  return rowsToObjects<Record<string, unknown>>(result).map((row: Record<string, unknown>) => ({
+    ...row,
+    type: row.type, // Keep as-is (frontend expects "type" not "type_")
+  }));
+}
+
+// User handlers
+async function handleGetUsers(): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, username, email, full_name, phone, role, is_active, profile_picture, created_at, updated_at FROM users ORDER BY created_at DESC",
+    []
+  );
+  return rowsToObjects<Record<string, unknown>>(result).map((row: Record<string, unknown>) => ({
+    ...row,
+    is_active: Number(row.is_active) === 1,
+  }));
+}
+
+// COA category tree
+async function handleGetCoaCategoryTree(): Promise<Record<string, unknown>[]> {
+  // Same as get_coa_categories, frontend builds tree
+  return handleGetCoaCategories();
+}
+
 // Init tables: return OK (schema already run in db_open)
 const INIT_TABLES = [
   "init_currencies_table", "init_suppliers_table", "init_customers_table", "init_unit_groups_table", "init_units_table",
@@ -706,6 +1190,146 @@ export async function POST(request: NextRequest) {
           ((payload.sort_by ?? payload.sortBy) as string) ?? null,
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
         );
+        break;
+      case "get_sale":
+        result = await handleGetSale(Number(payload.id));
+        break;
+      case "get_sale_items":
+        result = await handleGetSaleItems(Number(payload.saleId));
+        break;
+      case "get_sale_payments":
+        result = await handleGetSalePayments(Number(payload.saleId));
+        break;
+      case "get_sale_additional_costs":
+        result = await handleGetSaleAdditionalCosts(Number(payload.saleId));
+        break;
+      case "get_product_batches":
+        result = await handleGetProductBatches(Number(payload.productId));
+        break;
+      case "get_product_stock":
+        result = await handleGetProductStock(Number(payload.productId), payload.unitId != null ? Number(payload.unitId) : null);
+        break;
+      case "get_stock_by_batches":
+        result = await handleGetStockByBatches();
+        break;
+      case "get_service":
+        result = await handleGetService(Number(payload.id));
+        break;
+      case "get_expense_types":
+        result = await handleGetExpenseTypes();
+        break;
+      case "create_expense_type":
+        result = await handleCreateExpenseType(String(payload.name ?? ""));
+        break;
+      case "update_expense_type":
+        result = await handleUpdateExpenseType(Number(payload.id), String(payload.name ?? ""));
+        break;
+      case "delete_expense_type":
+        result = await handleDeleteExpenseType(Number(payload.id));
+        break;
+      case "get_expenses":
+        result = await handleGetExpenses(
+          Number(payload.page ?? 1),
+          Number(payload.per_page ?? payload.perPage ?? 10),
+          (payload.search as string) ?? null,
+          ((payload.sort_by ?? payload.sortBy) as string) ?? null,
+          ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
+      case "get_expense":
+        result = await handleGetExpense(Number(payload.id));
+        break;
+      case "get_employees":
+        result = await handleGetEmployees(
+          Number(payload.page ?? 1),
+          Number(payload.per_page ?? payload.perPage ?? 10),
+          (payload.search as string) ?? null,
+          ((payload.sort_by ?? payload.sortBy) as string) ?? null,
+          ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
+      case "get_employee":
+        result = await handleGetEmployee(Number(payload.id));
+        break;
+      case "get_salaries":
+        result = await handleGetSalaries(
+          Number(payload.page ?? 1),
+          Number(payload.per_page ?? payload.perPage ?? 10),
+          (payload.search as string) ?? null,
+          ((payload.sort_by ?? payload.sortBy) as string) ?? null,
+          ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
+      case "get_salaries_by_employee":
+        result = await handleGetSalariesByEmployee(Number(payload.employeeId));
+        break;
+      case "get_salary":
+        result = await handleGetSalary(Number(payload.id));
+        break;
+      case "get_deduction":
+        result = await handleGetDeduction(Number(payload.id));
+        break;
+      case "get_deductions_by_employee":
+        result = await handleGetDeductionsByEmployee(Number(payload.employeeId));
+        break;
+      case "get_deductions_by_employee_year_month":
+        result = await handleGetDeductionsByEmployeeYearMonth(
+          Number(payload.employeeId),
+          Number(payload.year),
+          String(payload.month ?? "")
+        );
+        break;
+      case "get_account":
+        result = await handleGetAccount(Number(payload.id));
+        break;
+      case "get_account_balance":
+        result = await handleGetAccountBalance(Number(payload.accountId));
+        break;
+      case "get_account_transactions":
+        result = await handleGetAccountTransactions(Number(payload.accountId));
+        break;
+      case "get_account_balance_by_currency":
+        result = await handleGetAccountBalanceByCurrency(Number(payload.accountId), Number(payload.currencyId));
+        break;
+      case "get_all_account_balances":
+        result = await handleGetAllAccountBalances();
+        break;
+      case "get_journal_entries":
+        result = await handleGetJournalEntries(
+          Number(payload.page ?? 1),
+          Number(payload.per_page ?? payload.perPage ?? 10),
+          (payload.search as string) ?? null,
+          ((payload.sort_by ?? payload.sortBy) as string) ?? null,
+          ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
+      case "get_journal_entry":
+        result = await handleGetJournalEntry(Number(payload.id));
+        break;
+      case "get_exchange_rate":
+        result = await handleGetExchangeRate(
+          Number(payload.fromCurrencyId),
+          Number(payload.toCurrencyId),
+          (payload.date as string) ?? null
+        );
+        break;
+      case "get_exchange_rate_history":
+        result = await handleGetExchangeRateHistory(Number(payload.fromCurrencyId), Number(payload.toCurrencyId));
+        break;
+      case "get_discount_codes":
+        result = await handleGetDiscountCodes((payload.search as string) ?? null);
+        break;
+      case "get_users":
+        result = await handleGetUsers();
+        break;
+      case "get_purchase_items":
+        result = await handleGetPurchaseItems(Number(payload.purchaseId));
+        break;
+      case "get_purchase_payments":
+        result = await handleGetPurchasePaymentsByPurchase(Number(payload.purchaseId));
+        break;
+      case "get_coa_category_tree":
+        result = await handleGetCoaCategoryTree();
         break;
       default:
         if (INIT_TABLES.includes(cmd)) {
