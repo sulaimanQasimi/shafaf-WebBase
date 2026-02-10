@@ -466,6 +466,27 @@ async function handleGetDeductions(page: number, perPage: number, search: string
   );
 }
 
+async function handleGetServices(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
+  let where = "";
+  const params: unknown[] = [];
+  if (search?.trim()) {
+    where = "WHERE (name LIKE ? OR description LIKE ?)";
+    params.push(`%${search}%`, `%${search}%`);
+  }
+  const allowedSort = ["name", "price", "created_at"].includes(sortBy || "") ? sortBy! : "name";
+  const order = (sortOrder || "asc").toUpperCase() === "DESC" ? "DESC" : "ASC";
+  return paginated(
+    "services",
+    "*",
+    `SELECT COUNT(*) FROM services ${where}`,
+    `SELECT id, name, price, currency_id, description, created_at, updated_at FROM services ${where}`,
+    params,
+    page,
+    perPage,
+    `ORDER BY ${allowedSort} ${order}`
+  );
+}
+
 // Init tables: return OK (schema already run in db_open)
 const INIT_TABLES = [
   "init_currencies_table", "init_suppliers_table", "init_customers_table", "init_unit_groups_table", "init_units_table",
@@ -670,6 +691,15 @@ export async function POST(request: NextRequest) {
         break;
       case "get_deductions":
         result = await handleGetDeductions(
+          Number(payload.page ?? 1),
+          Number(payload.per_page ?? payload.perPage ?? 10),
+          (payload.search as string) ?? null,
+          ((payload.sort_by ?? payload.sortBy) as string) ?? null,
+          ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
+      case "get_services":
+        result = await handleGetServices(
           Number(payload.page ?? 1),
           Number(payload.per_page ?? payload.perPage ?? 10),
           (payload.search as string) ?? null,
