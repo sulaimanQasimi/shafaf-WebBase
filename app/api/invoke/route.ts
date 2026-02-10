@@ -265,6 +265,73 @@ async function handleGetProducts(page: number, perPage: number, search: string |
     `ORDER BY ${allowedSort} ${order}`
   );
 }
+
+async function handleCreateProduct(
+  name: string,
+  description: string | null,
+  price: number | null,
+  currencyId: number | null,
+  supplierId: number | null,
+  stockQuantity: number | null,
+  unit: string | null,
+  imagePath: string | null,
+  barCode: string | null
+): Promise<Record<string, unknown>> {
+  await runExecute(
+    "INSERT INTO products (name, description, price, currency_id, supplier_id, stock_quantity, unit, image_path, bar_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [name, description, price, currencyId, supplierId, stockQuantity, unit, imagePath, barCode]
+  );
+  const r = await runQuery(
+    "SELECT id, name, description, price, currency_id, supplier_id, stock_quantity, unit, image_path, bar_code, created_at, updated_at FROM products WHERE name = ? ORDER BY id DESC LIMIT 1",
+    [name]
+  );
+  const rows = rowsToObjects<Record<string, unknown>>(r);
+  const product = rows[0];
+  if (!product) throw new Error("Failed to retrieve created product");
+  return product;
+}
+
+async function handleUpdateProduct(
+  id: number,
+  name: string,
+  description: string | null,
+  price: number | null,
+  currencyId: number | null,
+  supplierId: number | null,
+  stockQuantity: number | null,
+  unit: string | null,
+  imagePath: string | null,
+  barCode: string | null
+): Promise<Record<string, unknown>> {
+  await runExecute(
+    "UPDATE products SET name = ?, description = ?, price = ?, currency_id = ?, supplier_id = ?, stock_quantity = ?, unit = ?, image_path = ?, bar_code = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [name, description, price, currencyId, supplierId, stockQuantity, unit, imagePath, barCode, id]
+  );
+  const r = await runQuery(
+    "SELECT id, name, description, price, currency_id, supplier_id, stock_quantity, unit, image_path, bar_code, created_at, updated_at FROM products WHERE id = ?",
+    [id]
+  );
+  const rows = rowsToObjects<Record<string, unknown>>(r);
+  const product = rows[0];
+  if (!product) throw new Error("Product not found");
+  return product;
+}
+
+async function handleDeleteProduct(id: number): Promise<string> {
+  const purchaseCheck = await runQuery("SELECT COUNT(*) AS c FROM purchase_items WHERE product_id = ?", [id]);
+  const purchaseCount = Number(purchaseCheck.rows[0]?.[0] ?? 0);
+  const saleCheck = await runQuery("SELECT COUNT(*) AS c FROM sale_items WHERE product_id = ?", [id]);
+  const saleCount = Number(saleCheck.rows[0]?.[0] ?? 0);
+  if (purchaseCount > 0 || saleCount > 0) {
+    const reasons: string[] = [];
+    if (purchaseCount > 0) reasons.push(`used in ${purchaseCount} purchase(s)`);
+    if (saleCount > 0) reasons.push(`used in ${saleCount} sale(s)`);
+    throw new Error(`Cannot delete product: it is ${reasons.join(" and ")}`);
+  }
+  await runExecute("DELETE FROM products WHERE id = ?", [id]);
+  return "Product deleted successfully";
+}
+
 async function handleGetSuppliers(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
   let where = "";
   const params: unknown[] = [];
@@ -525,6 +592,36 @@ export async function POST(request: NextRequest) {
           ((payload.sort_by ?? payload.sortBy) as string) ?? null,
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
         );
+        break;
+      case "create_product":
+        result = await handleCreateProduct(
+          String(payload.name ?? ""),
+          (payload.description as string) ?? null,
+          payload.price != null ? Number(payload.price) : null,
+          payload.currencyId != null ? Number(payload.currencyId) : null,
+          payload.supplierId != null ? Number(payload.supplierId) : null,
+          payload.stockQuantity != null ? Number(payload.stockQuantity) : null,
+          (payload.unit as string) ?? null,
+          (payload.imagePath as string) ?? null,
+          (payload.barCode as string) ?? null
+        );
+        break;
+      case "update_product":
+        result = await handleUpdateProduct(
+          Number(payload.id),
+          String(payload.name ?? ""),
+          (payload.description as string) ?? null,
+          payload.price != null ? Number(payload.price) : null,
+          payload.currencyId != null ? Number(payload.currencyId) : null,
+          payload.supplierId != null ? Number(payload.supplierId) : null,
+          payload.stockQuantity != null ? Number(payload.stockQuantity) : null,
+          (payload.unit as string) ?? null,
+          (payload.imagePath as string) ?? null,
+          (payload.barCode as string) ?? null
+        );
+        break;
+      case "delete_product":
+        result = await handleDeleteProduct(Number(payload.id));
         break;
       case "get_suppliers":
         result = await handleGetSuppliers(
