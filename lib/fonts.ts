@@ -103,8 +103,8 @@ export async function loadFont(fontName: string): Promise<string | null> {
             await fontFace.load();
             document.fonts.add(fontFace);
             return cleanFontName;
-        } catch (error) {
-            console.error(`Error loading font from path ${fontName}:`, error);
+        } catch {
+            // Font file may be missing; fall through to other methods or fallback
         }
     }
     
@@ -174,8 +174,8 @@ async function loadCSSFont(cssPath: string, fontFamilyName: string): Promise<str
             }, 100);
         };
         link.onerror = () => {
-            console.error(`Failed to load font CSS: ${cssPath}`);
-            resolve(fontFamilyName); // Return anyway, might be loaded already
+            // Font CSS may be missing (e.g. not in public/fonts); fail silently and use fallback
+            resolve(fontFamilyName);
         };
         document.head.appendChild(link);
     });

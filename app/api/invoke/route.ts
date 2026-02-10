@@ -161,6 +161,44 @@ async function handleGetCurrencies() {
   const r = await runQuery("SELECT id, name, base, rate, created_at, updated_at FROM currencies ORDER BY base DESC, name ASC", []);
   return rowsToObjects(r).map((row: Record<string, unknown>) => ({ ...row, base: Number(row.base) === 1 }));
 }
+
+// Units
+async function handleGetUnits() {
+  // include group_name for UI convenience
+  const r = await runQuery(
+    `SELECT u.id, u.name, u.group_id, u.ratio, u.is_base, ug.name AS group_name, u.created_at, u.updated_at
+     FROM units u
+     LEFT JOIN unit_groups ug ON ug.id = u.group_id
+     ORDER BY u.name ASC`,
+    []
+  );
+  return rowsToObjects(r).map((row: Record<string, unknown>) => ({ ...row, is_base: Number(row.is_base) === 1 }));
+}
+
+async function handleGetUnitGroups() {
+  const r = await runQuery("SELECT id, name, created_at, updated_at FROM unit_groups ORDER BY name ASC", []);
+  return rowsToObjects(r);
+}
+
+// Accounts (basic list for pickers)
+async function handleGetAccounts() {
+  const r = await runQuery(
+    `SELECT id, name, currency_id, coa_category_id, account_code, account_type, initial_balance, current_balance, is_active, notes, created_at, updated_at
+     FROM accounts
+     ORDER BY created_at DESC`,
+    []
+  );
+  return rowsToObjects(r).map((row: Record<string, unknown>) => ({ ...row, is_active: Number(row.is_active) === 1 }));
+}
+
+async function handleGetCoaCategories(): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, parent_id, name, code, category_type, level, created_at, updated_at FROM coa_categories ORDER BY level, code",
+    []
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
 async function handleCreateCurrency(name: string, base: boolean, rate: number) {
   if (base) await runExecute("UPDATE currencies SET base = 0", []);
   await runExecute("INSERT INTO currencies (name, base, rate) VALUES (?, ?, ?)", [name, base ? 1 : 0, rate]);
@@ -195,12 +233,16 @@ async function paginated(
 ) {
   const totalR = await runQuery(countSql, params);
   const total = Number((totalR.rows[0] ?? [0])[0]) || 0;
-  const offset = (page - 1) * perPage;
-  const dataParams = [...params, perPage, offset];
-  const dataR = await runQuery(`${dataSql} ${orderBy} LIMIT ? OFFSET ?`, dataParams);
+  const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  const safePerPage = Number.isFinite(perPage) && perPage > 0 ? Math.min(100000, Math.floor(perPage)) : 10;
+  const offset = (safePage - 1) * safePerPage;
+
+  // IMPORTANT: some MySQL/MariaDB setups error on LIMIT/OFFSET placeholders in prepared statements.
+  // We inline validated integers here to avoid `Incorrect arguments to mysqld_stmt_execute`.
+  const dataR = await runQuery(`${dataSql} ${orderBy} LIMIT ${safePerPage} OFFSET ${offset}`, params);
   const items = rowsToObjects(dataR);
-  const totalPages = Math.ceil(total / perPage);
-  return { items, total, page, per_page: perPage, total_pages: totalPages };
+  const totalPages = Math.ceil(total / safePerPage);
+  return { items, total, page: safePage, per_page: safePerPage, total_pages: totalPages };
 }
 
 async function handleGetProducts(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
@@ -243,6 +285,28 @@ async function handleGetSuppliers(page: number, perPage: number, search: string 
     `ORDER BY ${allowedSort} ${order}`
   );
 }
+
+async function handleGetCustomers(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
+  let where = "";
+  const params: unknown[] = [];
+  if (search?.trim()) {
+    where = "WHERE (full_name LIKE ? OR phone LIKE ? OR email LIKE ?)";
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+  const allowedSort = ["full_name", "created_at"].includes(sortBy || "") ? sortBy! : "created_at";
+  const order = (sortOrder || "desc").toUpperCase() === "DESC" ? "DESC" : "ASC";
+  return paginated(
+    "customers",
+    "*",
+    `SELECT COUNT(*) FROM customers ${where}`,
+    `SELECT id, full_name, phone, address, email, notes, created_at, updated_at FROM customers ${where}`,
+    params,
+    page,
+    perPage,
+    `ORDER BY ${allowedSort} ${order}`
+  );
+}
+
 async function handleGetPurchases(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
   let where = "";
   const params: unknown[] = [];
@@ -259,6 +323,49 @@ async function handleGetPurchases(page: number, perPage: number, search: string 
     `ORDER BY ${allowedSort} ${order}`
   );
 }
+
+async function handleGetPurchase(id: number): Promise<[Record<string, unknown>, Record<string, unknown>[]]> {
+  const purchaseResult = await runQuery(
+    "SELECT id, supplier_id, date, notes, currency_id, total_amount, additional_cost, batch_number, created_at, updated_at FROM purchases WHERE id = ?",
+    [id]
+  );
+  const purchases = rowsToObjects<Record<string, unknown>>(purchaseResult);
+  const purchase = purchases[0];
+  if (!purchase) {
+    throw new Error("Purchase not found");
+  }
+  const sumResult = await runQuery(
+    "SELECT COALESCE(SUM(amount), 0) AS additional_cost FROM purchase_additional_costs WHERE purchase_id = ?",
+    [id]
+  );
+  const sumRow = sumResult.rows[0];
+  const idx = sumResult.columns.indexOf("additional_cost");
+  purchase.additional_cost = sumRow && idx >= 0 ? (sumRow[idx] as number) : 0;
+
+  const itemsResult = await runQuery(
+    "SELECT id, purchase_id, product_id, unit_id, per_price, amount, total, per_unit, cost_price, wholesale_price, retail_price, expiry_date, created_at FROM purchase_items WHERE purchase_id = ?",
+    [id]
+  );
+  const items = rowsToObjects<Record<string, unknown>>(itemsResult);
+  return [purchase, items];
+}
+
+async function handleGetPurchaseAdditionalCosts(purchaseId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, purchase_id, name, amount, created_at FROM purchase_additional_costs WHERE purchase_id = ? ORDER BY id",
+    [purchaseId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
+async function handleGetPurchasePaymentsByPurchase(purchaseId: number): Promise<Record<string, unknown>[]> {
+  const result = await runQuery(
+    "SELECT id, purchase_id, account_id, amount, currency, rate, total, date, notes, created_at FROM purchase_payments WHERE purchase_id = ? ORDER BY date DESC, created_at DESC",
+    [purchaseId]
+  );
+  return rowsToObjects<Record<string, unknown>>(result);
+}
+
 async function handleGetSales(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
   let where = "";
   const params: unknown[] = [];
@@ -389,6 +496,18 @@ export async function POST(request: NextRequest) {
       case "get_currencies":
         result = await handleGetCurrencies();
         break;
+      case "get_units":
+        result = await handleGetUnits();
+        break;
+      case "get_unit_groups":
+        result = await handleGetUnitGroups();
+        break;
+      case "get_accounts":
+        result = await handleGetAccounts();
+        break;
+      case "get_coa_categories":
+        result = await handleGetCoaCategories();
+        break;
       case "create_currency":
         result = await handleCreateCurrency(String(payload.name ?? ""), Boolean(payload.base), Number(payload.rate ?? 1));
         break;
@@ -416,6 +535,15 @@ export async function POST(request: NextRequest) {
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
         );
         break;
+      case "get_customers":
+        result = await handleGetCustomers(
+          Number(payload.page ?? 1),
+          Number(payload.per_page ?? payload.perPage ?? 10),
+          (payload.search as string) ?? null,
+          ((payload.sort_by ?? payload.sortBy) as string) ?? null,
+          ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
       case "get_purchases":
         result = await handleGetPurchases(
           Number(payload.page ?? 1),
@@ -424,6 +552,15 @@ export async function POST(request: NextRequest) {
           ((payload.sort_by ?? payload.sortBy) as string) ?? null,
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
         );
+        break;
+      case "get_purchase":
+        result = await handleGetPurchase(Number(payload.id));
+        break;
+      case "get_purchase_additional_costs":
+        result = await handleGetPurchaseAdditionalCosts(Number(payload.purchaseId));
+        break;
+      case "get_purchase_payments_by_purchase":
+        result = await handleGetPurchasePaymentsByPurchase(Number(payload.purchaseId));
         break;
       case "get_sales":
         result = await handleGetSales(
