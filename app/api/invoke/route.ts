@@ -728,6 +728,188 @@ async function handleGetExpense(id: number): Promise<Record<string, unknown>> {
   return expense;
 }
 
+// Helper functions for sale creation
+function round2(x: number): number {
+  return Math.round(x * 100) / 100;
+}
+
+function computeDiscountAmount(subtotal: number, discountType: string | null, discountValue: number): number {
+  if (subtotal <= 0) return 0;
+  if (!discountType) return 0;
+  if (discountType === "percent") {
+    const pct = Math.max(0, Math.min(100, discountValue));
+    return round2(subtotal * pct / 100);
+  } else if (discountType === "fixed") {
+    return round2(Math.min(subtotal, discountValue));
+  }
+  return 0;
+}
+
+async function getUnitRatio(unitId: number): Promise<number> {
+  const result = await runQuery("SELECT ratio FROM units WHERE id = ?", [unitId]);
+  const ratio = Number(result.rows[0]?.[0] ?? 1);
+  return ratio || 1;
+}
+
+async function amountToBase(amount: number, unitId: number): Promise<number> {
+  const ratio = await getUnitRatio(unitId);
+  return amount * ratio;
+}
+
+async function getBatchRemainingBase(purchaseItemId: number): Promise<number> {
+  const result = await runQuery(
+    `SELECT ROUND(((pi.amount * COALESCE(u_pi.ratio, 1)) - COALESCE(sold.sold_base, 0)) / COALESCE(u_pi.ratio, 1), 6) AS remaining_quantity
+    FROM purchase_items pi
+    LEFT JOIN units u_pi ON u_pi.id = pi.unit_id
+    LEFT JOIN (
+      SELECT si.purchase_item_id,
+        SUM(si.amount * COALESCE(u_si.ratio, 1)) AS sold_base
+      FROM sale_items si
+      LEFT JOIN units u_si ON u_si.id = si.unit_id
+      WHERE si.purchase_item_id IS NOT NULL
+      GROUP BY si.purchase_item_id
+    ) sold ON sold.purchase_item_id = pi.id
+    WHERE pi.id = ?`,
+    [purchaseItemId]
+  );
+  return Number(result.rows[0]?.[0] ?? 0);
+}
+
+// Sale creation handler
+async function handleCreateSale(
+  customerId: number,
+  date: string,
+  notes: string | null,
+  currencyId: number | null,
+  exchangeRate: number,
+  paidAmount: number,
+  additionalCosts: [string, number][],
+  items: [number, number, number, number, number | null, string | null, string | null, number][],
+  serviceItems: [number, string, number, number, string | null, number][],
+  orderDiscountType: string | null,
+  orderDiscountValue: number
+): Promise<Record<string, unknown>> {
+  if (items.length === 0 && serviceItems.length === 0) {
+    throw new Error("Sale must have at least one product item or service item");
+  }
+
+  // Compute line totals with line-level discount
+  const itemsLineTotals: number[] = [];
+  for (const [, , perPrice, amount, , , discountType, discountValue] of items) {
+    const lineSubtotal = perPrice * amount;
+    const disc = computeDiscountAmount(lineSubtotal, discountType, discountValue);
+    itemsLineTotals.push(round2(lineSubtotal - disc));
+  }
+
+  const serviceLineTotals: number[] = [];
+  for (const [, , price, qty, discountType, discountValue] of serviceItems) {
+    const lineSubtotal = price * qty;
+    const disc = computeDiscountAmount(lineSubtotal, discountType, discountValue);
+    serviceLineTotals.push(round2(lineSubtotal - disc));
+  }
+
+  const subtotal = round2(itemsLineTotals.reduce((a, b) => a + b, 0) + serviceLineTotals.reduce((a, b) => a + b, 0));
+  const orderDiscountAmount = computeDiscountAmount(subtotal, orderDiscountType, orderDiscountValue);
+  const additionalCostsTotal = additionalCosts.reduce((sum, [, amount]) => sum + amount, 0);
+  const totalAmount = round2(subtotal - orderDiscountAmount + additionalCostsTotal);
+  const baseAmount = totalAmount * exchangeRate;
+
+  // Insert sale
+  await runExecute(
+    "INSERT INTO sales (customer_id, date, notes, currency_id, exchange_rate, total_amount, base_amount, paid_amount, additional_cost, order_discount_type, order_discount_value, order_discount_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [
+      customerId,
+      date,
+      notes,
+      currencyId,
+      exchangeRate,
+      totalAmount,
+      baseAmount,
+      paidAmount,
+      additionalCostsTotal,
+      orderDiscountType,
+      orderDiscountValue,
+      orderDiscountAmount,
+    ]
+  );
+
+  // Get the created sale ID
+  const saleIdResult = await runQuery("SELECT id FROM sales WHERE customer_id = ? AND date = ? ORDER BY id DESC LIMIT 1", [customerId, date]);
+  const saleId = Number(saleIdResult.rows[0]?.[0]);
+  if (!saleId) {
+    throw new Error("Failed to retrieve sale ID");
+  }
+
+  // Get base currency ID
+  const baseCurrencyResult = await runQuery("SELECT id FROM currencies WHERE base = 1 LIMIT 1", []);
+  let baseCurrencyId = baseCurrencyResult.rows[0] ? Number(baseCurrencyResult.rows[0][0]) : null;
+  if (!baseCurrencyId) {
+    const firstCurrencyResult = await runQuery("SELECT id FROM currencies LIMIT 1", []);
+    baseCurrencyId = firstCurrencyResult.rows[0] ? Number(firstCurrencyResult.rows[0][0]) : 1;
+  }
+
+  // Validate batch stock for each sale item
+  const batchUsedBase: Map<number, number> = new Map();
+  for (const [productId, unitId, , amount, purchaseItemId] of items) {
+    if (purchaseItemId) {
+      const remainingBase = await getBatchRemainingBase(purchaseItemId);
+      const usedSoFar = batchUsedBase.get(purchaseItemId) || 0;
+      const thisBase = await amountToBase(amount, unitId);
+      if (usedSoFar + thisBase > remainingBase + 1e-9) {
+        throw new Error("موجودی دسته کافی نیست (Insufficient batch stock)");
+      }
+      batchUsedBase.set(purchaseItemId, usedSoFar + thisBase);
+    }
+  }
+
+  // Insert sale items
+  for (let idx = 0; idx < items.length; idx++) {
+    const [productId, unitId, perPrice, amount, purchaseItemId, saleType, discountType, discountValue] = items[idx];
+    const total = itemsLineTotals[idx] || perPrice * amount;
+    await runExecute(
+      "INSERT INTO sale_items (sale_id, product_id, unit_id, per_price, amount, total, purchase_item_id, sale_type, discount_type, discount_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [saleId, productId, unitId, perPrice, amount, total, purchaseItemId, saleType, discountType, discountValue]
+    );
+  }
+
+  // Insert sale service items
+  for (let idx = 0; idx < serviceItems.length; idx++) {
+    const [serviceId, name, price, quantity, discountType, discountValue] = serviceItems[idx];
+    const total = serviceLineTotals[idx] || price * quantity;
+    await runExecute(
+      "INSERT INTO sale_service_items (sale_id, service_id, name, price, quantity, total, discount_type, discount_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [saleId, serviceId, name, price, quantity, total, discountType, discountValue]
+    );
+  }
+
+  // Insert additional costs
+  for (const [name, amount] of additionalCosts) {
+    await runExecute("INSERT INTO sale_additional_costs (sale_id, name, amount) VALUES (?, ?, ?)", [saleId, name, amount]);
+  }
+
+  // Insert initial payment if paid_amount > 0
+  if (paidAmount > 0) {
+    const paymentCurrencyId = currencyId || baseCurrencyId;
+    const paymentBaseAmount = paidAmount * exchangeRate;
+    await runExecute(
+      "INSERT INTO sale_payments (sale_id, currency_id, exchange_rate, amount, base_amount, date) VALUES (?, ?, ?, ?, ?, ?)",
+      [saleId, paymentCurrencyId, exchangeRate, paidAmount, paymentBaseAmount, date]
+    );
+  }
+
+  // Get the created sale
+  const saleResult = await runQuery(
+    "SELECT id, customer_id, date, notes, currency_id, exchange_rate, total_amount, base_amount, paid_amount, additional_cost, order_discount_type, order_discount_value, order_discount_amount, discount_code_id, created_at, updated_at FROM sales WHERE id = ?",
+    [saleId]
+  );
+  const sales = rowsToObjects<Record<string, unknown>>(saleResult);
+  const sale = sales[0];
+  if (!sale) {
+    throw new Error("Failed to retrieve created sale");
+  }
+  return sale;
+}
+
 // Employee handlers
 async function handleGetEmployees(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
   let where = "";
@@ -1171,6 +1353,21 @@ export async function POST(request: NextRequest) {
           (payload.search as string) ?? null,
           ((payload.sort_by ?? payload.sortBy) as string) ?? null,
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
+        );
+        break;
+      case "create_sale":
+        result = await handleCreateSale(
+          Number(payload.customerId),
+          String(payload.date ?? ""),
+          (payload.notes as string) ?? null,
+          payload.currencyId != null ? Number(payload.currencyId) : null,
+          Number(payload.exchangeRate ?? 1),
+          Number(payload.paidAmount ?? 0),
+          Array.isArray(payload.additionalCosts) ? payload.additionalCosts as [string, number][] : [],
+          Array.isArray(payload.items) ? payload.items as [number, number, number, number, number | null, string | null, string | null, number][] : [],
+          Array.isArray(payload.serviceItems) ? payload.serviceItems as [number, string, number, number, string | null, number][] : [],
+          (payload.orderDiscountType as string) ?? null,
+          Number(payload.orderDiscountValue ?? 0)
         );
         break;
       case "get_deductions":
