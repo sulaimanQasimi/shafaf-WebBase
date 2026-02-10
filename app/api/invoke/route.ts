@@ -353,6 +353,62 @@ async function handleGetSuppliers(page: number, perPage: number, search: string 
   );
 }
 
+async function handleCreateSupplier(
+  fullName: string,
+  phone: string,
+  address: string,
+  email: string | null,
+  notes: string | null
+): Promise<Record<string, unknown>> {
+  await runExecute("INSERT INTO suppliers (full_name, phone, address, email, notes) VALUES (?, ?, ?, ?, ?)", [
+    fullName,
+    phone,
+    address,
+    email,
+    notes,
+  ]);
+  const result = await runQuery(
+    "SELECT id, full_name, phone, address, email, notes, created_at, updated_at FROM suppliers WHERE full_name = ? AND phone = ? ORDER BY id DESC LIMIT 1",
+    [fullName, phone]
+  );
+  const suppliers = rowsToObjects<Record<string, unknown>>(result);
+  const supplier = suppliers[0];
+  if (!supplier) {
+    throw new Error("Failed to retrieve created supplier");
+  }
+  return supplier;
+}
+
+async function handleUpdateSupplier(
+  id: number,
+  fullName: string,
+  phone: string,
+  address: string,
+  email: string | null,
+  notes: string | null
+): Promise<Record<string, unknown>> {
+  await runExecute("UPDATE suppliers SET full_name = ?, phone = ?, address = ?, email = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+    fullName,
+    phone,
+    address,
+    email,
+    notes,
+    id,
+  ]);
+  const result = await runQuery("SELECT id, full_name, phone, address, email, notes, created_at, updated_at FROM suppliers WHERE id = ?", [id]);
+  const suppliers = rowsToObjects<Record<string, unknown>>(result);
+  const supplier = suppliers[0];
+  if (!supplier) {
+    throw new Error("Supplier not found");
+  }
+  return supplier;
+}
+
+async function handleDeleteSupplier(id: number): Promise<string> {
+  await runExecute("DELETE FROM suppliers WHERE id = ?", [id]);
+  return "Supplier deleted successfully";
+}
+
 async function handleGetCustomers(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
   let where = "";
   const params: unknown[] = [];
@@ -372,6 +428,62 @@ async function handleGetCustomers(page: number, perPage: number, search: string 
     perPage,
     `ORDER BY ${allowedSort} ${order}`
   );
+}
+
+async function handleCreateCustomer(
+  fullName: string,
+  phone: string,
+  address: string,
+  email: string | null,
+  notes: string | null
+): Promise<Record<string, unknown>> {
+  await runExecute("INSERT INTO customers (full_name, phone, address, email, notes) VALUES (?, ?, ?, ?, ?)", [
+    fullName,
+    phone,
+    address,
+    email,
+    notes,
+  ]);
+  const result = await runQuery(
+    "SELECT id, full_name, phone, address, email, notes, created_at, updated_at FROM customers WHERE full_name = ? AND phone = ? ORDER BY id DESC LIMIT 1",
+    [fullName, phone]
+  );
+  const customers = rowsToObjects<Record<string, unknown>>(result);
+  const customer = customers[0];
+  if (!customer) {
+    throw new Error("Failed to retrieve created customer");
+  }
+  return customer;
+}
+
+async function handleUpdateCustomer(
+  id: number,
+  fullName: string,
+  phone: string,
+  address: string,
+  email: string | null,
+  notes: string | null
+): Promise<Record<string, unknown>> {
+  await runExecute("UPDATE customers SET full_name = ?, phone = ?, address = ?, email = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+    fullName,
+    phone,
+    address,
+    email,
+    notes,
+    id,
+  ]);
+  const result = await runQuery("SELECT id, full_name, phone, address, email, notes, created_at, updated_at FROM customers WHERE id = ?", [id]);
+  const customers = rowsToObjects<Record<string, unknown>>(result);
+  const customer = customers[0];
+  if (!customer) {
+    throw new Error("Customer not found");
+  }
+  return customer;
+}
+
+async function handleDeleteCustomer(id: number): Promise<string> {
+  await runExecute("DELETE FROM customers WHERE id = ?", [id]);
+  return "Customer deleted successfully";
 }
 
 async function handleGetPurchases(page: number, perPage: number, search: string | null, sortBy: string | null, sortOrder: string | null) {
@@ -1319,6 +1431,28 @@ export async function POST(request: NextRequest) {
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
         );
         break;
+      case "create_supplier":
+        result = await handleCreateSupplier(
+          String(payload.fullName ?? payload.full_name ?? ""),
+          String(payload.phone ?? ""),
+          String(payload.address ?? ""),
+          (payload.email as string) ?? null,
+          (payload.notes as string) ?? null
+        );
+        break;
+      case "update_supplier":
+        result = await handleUpdateSupplier(
+          Number(payload.id),
+          String(payload.fullName ?? payload.full_name ?? ""),
+          String(payload.phone ?? ""),
+          String(payload.address ?? ""),
+          (payload.email as string) ?? null,
+          (payload.notes as string) ?? null
+        );
+        break;
+      case "delete_supplier":
+        result = await handleDeleteSupplier(Number(payload.id));
+        break;
       case "get_customers":
         result = await handleGetCustomers(
           Number(payload.page ?? 1),
@@ -1327,6 +1461,28 @@ export async function POST(request: NextRequest) {
           ((payload.sort_by ?? payload.sortBy) as string) ?? null,
           ((payload.sort_order ?? payload.sortOrder) as string) ?? null
         );
+        break;
+      case "create_customer":
+        result = await handleCreateCustomer(
+          String(payload.fullName ?? payload.full_name ?? ""),
+          String(payload.phone ?? ""),
+          String(payload.address ?? ""),
+          (payload.email as string) ?? null,
+          (payload.notes as string) ?? null
+        );
+        break;
+      case "update_customer":
+        result = await handleUpdateCustomer(
+          Number(payload.id),
+          String(payload.fullName ?? payload.full_name ?? ""),
+          String(payload.phone ?? ""),
+          String(payload.address ?? ""),
+          (payload.email as string) ?? null,
+          (payload.notes as string) ?? null
+        );
+        break;
+      case "delete_customer":
+        result = await handleDeleteCustomer(Number(payload.id));
         break;
       case "get_purchases":
         result = await handleGetPurchases(
