@@ -773,10 +773,10 @@ function App() {
         transition={{ duration: 0.5 }}
         className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-b border-purple-100 dark:border-purple-900/30 sticky top-0 z-50"
       >
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex justify-between items-center gap-2 flex-wrap">
             {/* Logo & Brand */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 min-w-0">
               <motion.div
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 transition={{ duration: 0.3 }}
@@ -801,7 +801,7 @@ function App() {
             </div>
 
             {/* License remaining days & User Profile */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
               {/* Always show license counter in navbar when user is logged in */}
               <div className="flex items-center gap-2">
                 <div
@@ -842,9 +842,9 @@ function App() {
                   )}
                 </motion.button>
               </div>
-              <div className="text-left">
-                <p className="font-semibold text-gray-900 dark:text-white">{user.username}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+              <div className="text-left min-w-0">
+                <p className="font-semibold text-gray-900 dark:text-white truncate">{user.username}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 hidden sm:block truncate">{user.email}</p>
               </div>
               
               {/* Theme Toggle */}
@@ -914,7 +914,7 @@ function App() {
         </div>
       </motion.header>
 
-      <main className="relative max-w-7xl mx-auto px-6 py-8 z-10">
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 z-10">
       
         {/* Quick Stats */}
         <motion.div
@@ -1074,15 +1074,16 @@ function App() {
       {/* AI Create/Update FAB - dashboard only */}
       <motion.button
         onClick={() => setAiCreateUpdateOpen(true)}
-        className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium hover:shadow-2xl hover:scale-105 transition-all"
+        className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-3 py-3 sm:px-4 sm:py-3 rounded-2xl shadow-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium hover:shadow-2xl hover:scale-105 transition-all"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.98 }}
         title="ایجاد و بروزرسانی با AI"
+        aria-label="ایجاد و بروزرسانی با AI"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
-        <span>ایجاد/بروزرسانی AI</span>
+        <span className="hidden sm:inline">ایجاد/بروزرسانی AI</span>
       </motion.button>
 
       <AiCreateUpdateModal

@@ -1045,7 +1045,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6" dir="rtl">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6" dir="rtl">
             <div className="max-w-7xl mx-auto">
                 <PageHeader
                     title={translations.title}
@@ -1162,13 +1162,13 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8"
                             >
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                                     {editingSale ? translations.edit : translations.addNew}
                                 </h2>
                                 <form onSubmit={handleSubmit} className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {translations.customer} <span className="text-red-500">*</span>
@@ -1201,7 +1201,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 ارز
@@ -1286,7 +1286,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                     animate={{ opacity: 1, y: 0 }}
                                                     className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border-2 border-gray-200 dark:border-gray-600"
                                                 >
-                                                    <div className="grid grid-cols-12 gap-3 items-end">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                                                         <div className="col-span-5">
                                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                                                 نام هزینه
@@ -1371,7 +1371,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                     animate={{ opacity: 1, y: 0 }}
                                                     className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border-2 border-gray-200 dark:border-gray-600"
                                                 >
-                                                    <div className="grid grid-cols-12 gap-3 items-end">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                                                         <div className={item.product_id && productBatches[item.product_id] && productBatches[item.product_id].length > 0 ? "col-span-2" : "col-span-4"}>
                                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                                                 {translations.product}
@@ -1528,7 +1528,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                                 const batch = productBatches[item.product_id].find(b => b.purchase_item_id === item.purchase_item_id);
                                                                 if (batch) {
                                                                     return (
-                                                                        <div className="grid grid-cols-4 gap-2 text-gray-700 dark:text-gray-300">
+                                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-700 dark:text-gray-300">
                                                                             <div><span className="font-semibold">تاریخ خرید:</span> {formatPersianDate(batch.purchase_date)}</div>
                                                                             {batch.expiry_date && <div><span className="font-semibold">تاریخ انقضا:</span> {formatPersianDate(batch.expiry_date)}</div>}
                                                                             <div><span className="font-semibold">موجودی:</span> {batch.remaining_quantity.toLocaleString()}</div>
@@ -1568,7 +1568,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                         animate={{ opacity: 1, y: 0 }}
                                                         className="p-4 bg-teal-50 dark:bg-teal-900/20 rounded-xl border-2 border-teal-200 dark:border-teal-700"
                                                     >
-                                                        <div className="grid grid-cols-12 gap-3 items-end">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                                                             <div className="col-span-4">
                                                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                                                     {translations.service}
@@ -1666,7 +1666,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{translations.subtotal}:</span>
                                                 <span className="text-lg font-bold text-gray-900 dark:text-white">{calculateSubtotal().toLocaleString('en-US')}</span>
                                             </div>
-                                            <div className="grid grid-cols-12 gap-2 items-end mb-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end mb-2">
                                                 <div className="col-span-4">
                                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{translations.discountCode}</label>
                                                     <div className="flex gap-2">
@@ -1698,7 +1698,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-12 gap-2 items-end">
+                                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
                                                 <div className="col-span-4">
                                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{translations.orderDiscount}</label>
                                                     <select
@@ -1750,7 +1750,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                 </span>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                                         {translations.paidAmount}
@@ -1929,7 +1929,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                 animate={{ scale: 1, opacity: 1, y: 0 }}
                                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto border border-purple-100 dark:border-purple-900/30"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-5xl max-h-[90vh] overflow-y-auto border border-purple-100 dark:border-purple-900/30"
                             >
                                 {/* Header */}
                                 <div className="flex justify-between items-center mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
@@ -2301,7 +2301,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div>
                                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                                                         {translations.payments.amount}
@@ -2379,7 +2379,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                 onClick={(e) => e.stopPropagation()}
                                 className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-purple-100 dark:border-purple-900/30 flex flex-col"
                             >
-                                <div className="px-8 py-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{translations.discountTokenManage}</h2>
                                     <button
                                         type="button"
@@ -2393,8 +2393,8 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                     </button>
                                 </div>
-                                <div className="p-8 overflow-y-auto flex-1">
-                                    <form onSubmit={handleDiscountTokenSubmit} className="mb-8 p-6 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-200 dark:border-gray-600">
+                                <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1">
+                                    <form onSubmit={handleDiscountTokenSubmit} className="mb-8 p-4 sm:p-6 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-200 dark:border-gray-600">
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{editingDiscountToken ? translations.edit : translations.addDiscountToken}</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                             <div>
@@ -2574,7 +2574,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                     animate={{ scale: 1, opacity: 1, y: 0 }}
                                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-md border border-red-100 dark:border-red-900/30"
+                                    className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-md border border-red-100 dark:border-red-900/30"
                                 >
                                     {/* Warning Icon */}
                                     <div className="flex justify-center mb-6">

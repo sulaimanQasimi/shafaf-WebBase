@@ -246,7 +246,7 @@ export default function ServicesManagement({ onBack }: ServicesManagementProps) 
 
     return (
         <div
-            className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6"
+            className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6"
             dir="rtl"
         >
             <div className="max-w-7xl mx-auto">
@@ -337,7 +337,7 @@ export default function ServicesManagement({ onBack }: ServicesManagementProps) 
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-lg my-8"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-lg my-8"
                             >
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                                     {editingService ? translations.edit : translations.addNew}

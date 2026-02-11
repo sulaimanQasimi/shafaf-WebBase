@@ -22,6 +22,11 @@ const geistMono = Geist_Mono({
 
 const baseUrl = getBaseUrl();
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {

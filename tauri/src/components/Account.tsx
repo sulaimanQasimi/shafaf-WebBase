@@ -685,7 +685,7 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                             >
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                                     {editingAccount ? translations.edit : translations.addNew}
@@ -864,7 +864,7 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                             >
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                                     {transactionType === "deposit" ? translations.deposit : translations.withdraw} - {selectedAccount.name}
@@ -1035,7 +1035,7 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
                                 animate={{ scale: 1, opacity: 1, y: 0 }}
                                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-md border border-red-100 dark:border-red-900/30"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-md border border-red-100 dark:border-red-900/30"
                             >
                                 <div className="flex justify-center mb-6">
                                     <motion.div

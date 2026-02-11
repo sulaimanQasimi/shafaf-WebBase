@@ -512,8 +512,8 @@ export default function PurchaseInvoice({
                 }
             `}</style>
 
-            <div className="invoice-page-wrapper min-h-screen bg-slate-100 dark:bg-gray-900 py-6 px-4 overflow-y-auto invoice-root" dir="rtl">
-                <div className="max-w-[230mm] w-full mx-auto">
+            <div className="invoice-page-wrapper min-h-screen bg-slate-100 dark:bg-gray-900 py-6 px-4 sm:px-6 overflow-y-auto overflow-x-auto invoice-root" dir="rtl">
+                <div className="max-w-[230mm] w-full mx-auto min-w-0">
                     <div className="no-print flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                             {onClose && (
@@ -603,8 +603,8 @@ export default function PurchaseInvoice({
                                 </div>
                             </div>
 
-                            <div className="table-container">
-                                <table className="modern-table">
+                            <div className="table-container overflow-x-auto">
+                                <table className="modern-table min-w-[600px]">
                                     <thead>
                                         <tr>
                                             <th style={{ width: "60px" }} className="text-center">#</th>
@@ -633,8 +633,8 @@ export default function PurchaseInvoice({
                             {purchaseData.additional_costs && purchaseData.additional_costs.length > 0 && (
                                 <div className="additional-costs-section">
                                     <div className="section-label">هزینه‌های اضافی</div>
-                                    <div className="table-container">
-                                        <table className="modern-table">
+                                    <div className="table-container overflow-x-auto">
+                                        <table className="modern-table min-w-[280px]">
                                             <thead>
                                                 <tr>
                                                     <th style={{ width: "60px" }} className="text-center">#</th>

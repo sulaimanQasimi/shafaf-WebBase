@@ -174,7 +174,7 @@ export default function License({ reason, onLicenseValid, onLicenseInvalid }: Li
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-purple-100/50 dark:border-purple-900/30"
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-purple-100/50 dark:border-purple-900/30"
         >
           {/* Galaxy Logo & App Name Section */}
           <motion.div

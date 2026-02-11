@@ -200,7 +200,7 @@ export default function ProfileEdit({ userId, onBack, onProfileUpdate }: Profile
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6" dir="rtl">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6" dir="rtl">
             <div className="max-w-4xl mx-auto">
                 {/* Back Button */}
                 <motion.div
@@ -238,7 +238,7 @@ export default function ProfileEdit({ userId, onBack, onProfileUpdate }: Profile
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl shadow-2xl p-8 mb-6 relative overflow-hidden"
+                    className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 mb-6 relative overflow-hidden"
                 >
                     {/* Decorative circles */}
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />

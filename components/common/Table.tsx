@@ -49,15 +49,15 @@ export default function Table<T extends { id: number | string }>({
     };
 
     return (
-        <div className="w-full space-y-4">
-            <div className="overflow-x-auto rounded-3xl border border-gray-100 dark:border-gray-700/50 shadow-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl">
+        <div className="w-full min-w-0 space-y-4">
+            <div className="min-w-0 overflow-x-auto rounded-3xl border border-gray-100 dark:border-gray-700/50 shadow-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl">
                 <table className="w-full">
                     <thead>
                         <tr className="bg-gray-50/50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-700/50">
                             {columns.map((col, idx) => (
                                 <th
                                     key={idx}
-                                    className={`px-6 py-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-300 ${col.sortable ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" : ""
+                                    className={`px-3 py-2 sm:px-6 sm:py-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-300 ${col.sortable ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" : ""
                                         } ${col.className || ""}`}
                                     onClick={() => col.sortable && handleSort(col.key as string)}
                                 >
@@ -80,7 +80,7 @@ export default function Table<T extends { id: number | string }>({
                                     </div>
                                 </th>
                             ))}
-                            {actions && <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-300">عملیات</th>}
+                            {actions && <th className="px-3 py-2 sm:px-6 sm:py-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-300">عملیات</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700/30">
@@ -112,12 +112,12 @@ export default function Table<T extends { id: number | string }>({
                                         className="group hover:bg-purple-50/50 dark:hover:bg-gray-700/30 transition-colors"
                                     >
                                         {columns.map((col, idx) => (
-                                            <td key={idx} className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                                            <td key={idx} className="px-3 py-2 sm:px-6 sm:py-4 text-sm text-gray-700 dark:text-gray-300">
                                                 {col.render ? col.render(item) : (item[col.key as keyof T] as React.ReactNode)}
                                             </td>
                                         ))}
                                         {actions && (
-                                            <td className="px-6 py-4">
+                                            <td className="px-3 py-2 sm:px-6 sm:py-4">
                                                 {actions(item)}
                                             </td>
                                         )}

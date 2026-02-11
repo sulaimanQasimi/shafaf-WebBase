@@ -144,8 +144,8 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6" dir="rtl">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6" dir="rtl">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6">
                 <PageHeader
                     title={translations.title}
                     onBack={onBack}
@@ -160,7 +160,7 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
                 />
 
                 <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl shadow-lg p-6 mb-6">
-                    <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 {translations.fromCurrency}
@@ -262,13 +262,13 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.9, opacity: 0 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                             >
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                                     {translations.addNew}
                                 </h2>
                                 <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {translations.fromCurrency} <span className="text-red-500">*</span>
@@ -308,7 +308,7 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
                                             </select>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 {translations.rate} <span className="text-red-500">*</span>

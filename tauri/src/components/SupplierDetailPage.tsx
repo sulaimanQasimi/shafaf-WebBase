@@ -172,7 +172,7 @@ export default function SupplierDetailPage({ supplierId, onBack }: SupplierDetai
 
   if (notFound || !supplier) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-6" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center p-4 sm:p-6" dir="rtl">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 max-w-md text-center">
           <p className="text-gray-700 dark:text-gray-300 mb-6">{translations.notFound}</p>
           <motion.button

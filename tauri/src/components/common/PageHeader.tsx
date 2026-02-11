@@ -78,7 +78,7 @@ export default function PageHeader({
                         whileHover={{ scale: 1.03, x: -5 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={onBack}
-                        className="group relative flex items-center gap-4 px-7 py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-3xl hover:bg-white dark:hover:bg-gray-900/90 text-gray-800 dark:text-gray-100 font-bold rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-2 border-gray-200/60 dark:border-gray-700/60 hover:border-purple-400/80 dark:hover:border-purple-500/80 transition-all duration-500 overflow-hidden"
+                        className="group relative flex items-center gap-4 px-4 py-3 sm:px-7 sm:py-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-3xl hover:bg-white dark:hover:bg-gray-900/90 text-gray-800 dark:text-gray-100 font-bold rounded-3xl shadow-2xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-2 border-gray-200/60 dark:border-gray-700/60 hover:border-purple-400/80 dark:hover:border-purple-500/80 transition-all duration-500 overflow-hidden"
                     >
                         {/* Animated gradient background */}
                         <motion.div
@@ -184,7 +184,7 @@ export default function PageHeader({
                         ref={titleRef}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={handleMouseLeave}
-                        className="relative group cursor-default"
+                        className="relative group cursor-default min-w-0"
                     >
                         <motion.div
                             style={{
