@@ -3,36 +3,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { getCompanySettings, updateCompanySettings, initCompanySettingsTable } from "@/lib/company";
 import { getAvailableFonts, applyFont } from "@/lib/fonts";
-import { saveBackupToPath, restoreDatabase, getBackupsDir } from "@/lib/db";
-import { checkForUpdates, installUpdate } from "@/lib/updater";
 import Footer from "./Footer";
-
-async function openSaveDialog(options: { defaultPath?: string; filters?: { name: string; extensions: string[] }[] }): Promise<string | null> {
-  if (typeof window === "undefined" || !(window as any).__TAURI__) {
-    toast.error("پشتیبان‌گیری در نسخه وب در دسترس نیست. از برنامه دسکتاپ استفاده کنید.");
-    return null;
-  }
-  const { save } = await import("@tauri-apps/plugin-dialog");
-  return await save(options);
-}
-
-async function openFileDialog(options: { filters?: { name: string; extensions: string[] }[]; title?: string }): Promise<string | string[] | null> {
-  if (typeof window === "undefined" || !(window as any).__TAURI__) {
-    toast.error("انتخاب فایل در نسخه وب در دسترس نیست. از برنامه دسکتاپ استفاده کنید.");
-    return null;
-  }
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  return await open(options);
-}
-
-async function openFolderDialog(options: { directory: true; title?: string }): Promise<string | string[] | null> {
-  if (typeof window === "undefined" || !(window as any).__TAURI__) {
-    toast.error("انتخاب پوشه در نسخه وب در دسترس نیست. از برنامه دسکتاپ استفاده کنید.");
-    return null;
-  }
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  return await open(options);
-}
 
 // Dari translations
 const translations = {
@@ -63,23 +34,7 @@ const translations = {
         phone: "شماره تماس را وارد کنید",
         address: "آدرس را وارد کنید",
     },
-    system: {
-        backupAndUpdate: "پشتیبان و بروزرسانی",
-        backupDesc: "ذخیره یک کپی از پایگاه داده در مسیر دلخواه",
-        restoreDesc: "بازگردانی پایگاه داده از فایل پشتیبان قبلی",
-        updateDesc: "بررسی و نصب آخرین نسخه برنامه",
-        backup: "پشتیبان‌گیری",
-        restore: "بازگردانی",
-        checkUpdate: "بررسی بروزرسانی",
-        installing: "در حال نصب...",
-        upToDate: "شما از آخرین نسخه استفاده می‌کنید",
-        updateAvailable: "بروزرسانی موجود است",
-        installNow: "نصب بروزرسانی",
-        autoBackupFolder: "پوشه پشتیبان خودکار",
-        autoBackupDirLabel: "مسیر پشتیبان خودکار",
-        chooseFolder: "انتخاب پوشه",
-        autoBackupDirHint: "اگر خالی باشد از پوشه پیش‌فرض برنامه استفاده می‌شود",
-    },
+    system: {},
     license: {
         remainingDays: "اعتبار لایسنس: {days} روز باقی‌مانده",
         expired: "اعتبار لایسنس منقضی شده",
@@ -102,89 +57,11 @@ export default function CompanySettings({ onBack, onNavigate }: CompanySettingsP
         phone: "",
         address: "",
         font: "",
-        auto_backup_dir: "",
     });
     const [availableFonts] = useState(getAvailableFonts());
-    const [checkingUpdate, setCheckingUpdate] = useState(false);
-    const [updateInfo, setUpdateInfo] = useState<{ available: boolean; version?: string; date?: string; body?: string } | null>(null);
-    const [backupsDir, setBackupsDir] = useState<string | null>(null);
-
-    const handleBackupDatabase = async () => {
-        try {
-            const filePath = await openSaveDialog({
-                defaultPath: `db-backup-${new Date().toISOString().split("T")[0]}.sql`,
-                filters: [{ name: "MySQL Dump", extensions: ["sql"] }],
-            });
-            if (filePath) {
-                await saveBackupToPath(filePath);
-                toast.success("پشتیبان‌گیری با موفقیت انجام شد");
-            }
-        } catch (error: any) {
-            if (error?.message && !String(error.message).includes("cancelled")) {
-                toast.error("خطا در پشتیبان‌گیری از پایگاه داده");
-            }
-        }
-    };
-
-    const handleRestoreDatabase = async () => {
-        try {
-            const filePath = await openFileDialog({
-                filters: [{ name: "MySQL Dump", extensions: ["sql"] }],
-                title: "انتخاب فایل پشتیبان",
-            });
-            if (filePath && typeof filePath === "string") {
-                const confirmed = window.confirm(
-                    "آیا مطمئن هستید که می‌خواهید پایگاه داده را بازگردانی کنید؟ تمام جداول به‌جز جدول کاربران (users) بازگردانی می‌شوند؛ کاربران فعلی حفظ می‌شوند."
-                );
-                if (confirmed) {
-                    await restoreDatabase(filePath);
-                    toast.success("بازگردانی پایگاه داده با موفقیت انجام شد");
-                    window.location.reload();
-                }
-            }
-        } catch (error: any) {
-            if (error?.message && !String(error.message).includes("cancelled")) {
-                toast.error("خطا در بازگردانی پایگاه داده");
-            }
-        }
-    };
-
-    const handleCheckForUpdates = async () => {
-        try {
-            setCheckingUpdate(true);
-            const info = await checkForUpdates();
-            if (info?.available) {
-                setUpdateInfo(info);
-                toast.success(`بروزرسانی جدید موجود است! نسخه ${info.version}`);
-            } else {
-                setUpdateInfo(null);
-                toast.success(translations.system.upToDate);
-            }
-        } catch {
-            toast.error("خطا در بررسی بروزرسانی");
-        } finally {
-            setCheckingUpdate(false);
-        }
-    };
-
-    const handleInstallUpdate = async () => {
-        try {
-            toast.loading("در حال دانلود و نصب بروزرسانی...", { id: "update-install" });
-            await installUpdate();
-            toast.success("بروزرسانی با موفقیت نصب شد. برنامه در حال راه‌اندازی مجدد است...", { id: "update-install" });
-        } catch {
-            toast.error("خطا در نصب بروزرسانی", { id: "update-install" });
-        }
-    };
 
     useEffect(() => {
         loadSettings();
-    }, []);
-
-    useEffect(() => {
-        getBackupsDir()
-            .then(setBackupsDir)
-            .catch(() => setBackupsDir(null));
     }, []);
 
     const loadSettings = async () => {
@@ -201,7 +78,6 @@ export default function CompanySettings({ onBack, onNavigate }: CompanySettingsP
                     phone: settingsData.phone || "",
                     address: settingsData.address || "",
                     font: settingsData.font || "",
-                    auto_backup_dir: settingsData.auto_backup_dir || "",
                 });
             }
         } catch (error: any) {
@@ -258,7 +134,6 @@ export default function CompanySettings({ onBack, onNavigate }: CompanySettingsP
                 phone: formData.phone || undefined,
                 address: formData.address || undefined,
                 font: formData.font || undefined,
-                auto_backup_dir: formData.auto_backup_dir?.trim() || null,
             });
 
             if (updatedSettings) {
@@ -409,109 +284,6 @@ export default function CompanySettings({ onBack, onNavigate }: CompanySettingsP
                         </div>
                     </motion.div>
                 )}
-
-                {/* Backup & Update Section */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mb-6"
-                >
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4 4m4-4V12" />
-                        </svg>
-                        {translations.system.backupAndUpdate}
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <motion.button
-                            type="button"
-                            onClick={handleBackupDatabase}
-                            whileHover={{ y: -4, scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="group flex flex-col items-start gap-3 p-5 rounded-2xl bg-white dark:bg-gray-800 border-2 border-amber-200 dark:border-amber-800/50 hover:border-amber-400 dark:hover:border-amber-600 shadow-lg hover:shadow-xl transition-all text-right"
-                        >
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4 4m4-4V12" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="font-bold text-gray-900 dark:text-white mb-1">{translations.system.backup}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{translations.system.backupDesc}</p>
-                            </div>
-                        </motion.button>
-                        <motion.button
-                            type="button"
-                            onClick={handleRestoreDatabase}
-                            whileHover={{ y: -4, scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="group flex flex-col items-start gap-3 p-5 rounded-2xl bg-white dark:bg-gray-800 border-2 border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-400 dark:hover:border-emerald-600 shadow-lg hover:shadow-xl transition-all text-right"
-                        >
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p className="font-bold text-gray-900 dark:text-white mb-1">{translations.system.restore}</p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{translations.system.restoreDesc}</p>
-                            </div>
-                        </motion.button>
-                        <div className="flex flex-col gap-3">
-                            <motion.button
-                                type="button"
-                                onClick={handleCheckForUpdates}
-                                disabled={checkingUpdate}
-                                whileHover={{ y: -4, scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="group flex flex-col items-start gap-3 p-5 rounded-2xl bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800/50 hover:border-blue-400 dark:hover:border-blue-600 shadow-lg hover:shadow-xl transition-all text-right disabled:opacity-60 disabled:pointer-events-none"
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                                    {checkingUpdate ? (
-                                        <motion.div
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                            className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
-                                        />
-                                    ) : (
-                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="font-bold text-gray-900 dark:text-white mb-1">{translations.system.checkUpdate}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{translations.system.updateDesc}</p>
-                                </div>
-                            </motion.button>
-                            {updateInfo?.available && (
-                                <motion.button
-                                    type="button"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    onClick={handleInstallUpdate}
-                                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l4-4m-4 4v12" />
-                                    </svg>
-                                    {translations.system.installNow} (v{updateInfo.version})
-                                </motion.button>
-                            )}
-                        </div>
-                    </div>
-                    {backupsDir != null && (
-                        <div className="mt-4 p-4 rounded-xl bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700">
-                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                پوشه پیش‌فرض (وقتی مسیر انتخاب نشده)
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 break-all font-mono dir-ltr" title={backupsDir}>
-                                {backupsDir}
-                            </p>
-                        </div>
-                    )}
-                </motion.div>
 
                 <form onSubmit={handleSubmit}>
                     {/* Company Information Section */}
@@ -687,46 +459,6 @@ export default function CompanySettings({ onBack, onNavigate }: CompanySettingsP
                                 </p>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    {translations.system.autoBackupDirLabel}
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={formData.auto_backup_dir}
-                                        onChange={(e) => setFormData({ ...formData, auto_backup_dir: e.target.value })}
-                                        placeholder={translations.system.autoBackupDirHint}
-                                        className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 font-mono text-sm dir-ltr"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={async () => {
-                                            try {
-                                                const path = await openFolderDialog({ directory: true, title: "انتخاب پوشه پشتیبان خودکار" });
-                                                if (path && typeof path === "string") {
-                                                    setFormData((prev) => ({ ...prev, auto_backup_dir: path }));
-                                                }
-                                            } catch (e) {
-                                                if (String(e).includes("cancelled") === false) {
-                                                    toast.error("خطا در انتخاب پوشه");
-                                                }
-                                            }
-                                        }}
-                                        className="px-4 py-3 rounded-xl border-2 border-purple-300 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 font-semibold whitespace-nowrap transition-colors"
-                                    >
-                                        {translations.system.chooseFolder}
-                                    </button>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                    {translations.system.autoBackupDirHint}
-                                </p>
-                                {backupsDir != null && (
-                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-mono dir-ltr break-all">
-                                        پوشه پیش‌فرض: {backupsDir}
-                                    </p>
-                                )}
-                            </div>
                         </div>
                     </motion.div>
 

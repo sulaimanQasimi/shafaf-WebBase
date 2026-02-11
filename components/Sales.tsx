@@ -255,7 +255,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                     const selectedCurrency = currencies.find(c => c.id.toString() === newPayment.currency_id);
                     if (selectedCurrency) {
                         const balance = await getAccountBalanceByCurrency(
-                            parseInt(newPayment.account_id),
+                            parseInt(newPayment.account_id, 10),
                             selectedCurrency.id
                         );
                         setSelectedAccountBalance(balance);
@@ -407,8 +407,8 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
             setLoading(true);
             await createSalePayment(
                 viewingSale.sale.id,
-                newPayment.account_id ? parseInt(newPayment.account_id) : null,
-                newPayment.currency_id ? parseInt(newPayment.currency_id) : null,
+                newPayment.account_id ? parseInt(newPayment.account_id, 10) : null,
+                newPayment.currency_id ? parseInt(newPayment.currency_id, 10) : null,
                 parseFloat(newPayment.exchange_rate.toString()) || 1,
                 parseFloat(newPayment.amount),
                 newPayment.date
@@ -839,7 +839,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                     formData.customer_id,
                     formData.date,
                     formData.notes || null,
-                    formData.currency_id ? parseInt(formData.currency_id) : null,
+                    formData.currency_id ? parseInt(formData.currency_id, 10) : null,
                     formData.exchange_rate ? parseFloat(formData.exchange_rate.toString()) : 1,
                     formData.paid_amount,
                     formData.additional_costs,
@@ -857,7 +857,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                     formData.customer_id,
                     formData.date,
                     formData.notes || null,
-                    formData.currency_id ? parseInt(formData.currency_id) : null,
+                    formData.currency_id ? parseInt(formData.currency_id, 10) : null,
                     formData.exchange_rate ? parseFloat(formData.exchange_rate.toString()) : 1,
                     paidAmountForCreate,
                     formData.additional_costs,
@@ -1175,7 +1175,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                             </label>
                                             <select
                                                 value={formData.customer_id}
-                                                onChange={(e) => setFormData({ ...formData, customer_id: parseInt(e.target.value) })}
+                                                onChange={(e) => setFormData({ ...formData, customer_id: parseInt(e.target.value, 10) })}
                                                 required
                                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
                                                 dir="rtl"
@@ -1399,7 +1399,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                                 </label>
                                                                 <select
                                                                     value={item.purchase_item_id || ''}
-                                                                    onChange={(e) => updateItem(index, 'purchase_item_id', parseInt(e.target.value) || null)}
+                                                                    onChange={(e) => updateItem(index, 'purchase_item_id', parseInt(e.target.value, 10) || null)}
                                                                     className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-500"
                                                                     dir="rtl"
                                                                 >
@@ -1434,7 +1434,7 @@ export default function SalesManagement({ onBack, onOpenInvoice }: SalesManageme
                                                             </label>
                                                             <select
                                                                 value={item.unit_id}
-                                                                onChange={(e) => updateItem(index, 'unit_id', parseInt(e.target.value))}
+                                                                onChange={(e) => updateItem(index, 'unit_id', parseInt(e.target.value, 10))}
                                                                 className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-500"
                                                                 dir="rtl"
                                                             >

@@ -115,8 +115,8 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
         try {
             setLoading(true);
             await createExchangeRate(
-                parseInt(formData.from_currency_id),
-                parseInt(formData.to_currency_id),
+                parseInt(formData.from_currency_id, 10),
+                parseInt(formData.to_currency_id, 10),
                 parseFloat(formData.rate),
                 formData.date
             );
@@ -168,7 +168,7 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
                             <select
                                 value={selectedFromCurrency || ""}
                                 onChange={(e) => {
-                                    const id = parseInt(e.target.value);
+                                    const id = parseInt(e.target.value, 10);
                                     setSelectedFromCurrency(id);
                                     if (id && selectedToCurrency) {
                                         loadRates(id, selectedToCurrency);
@@ -192,7 +192,7 @@ export default function CurrencyRates({ onBack }: CurrencyRatesProps) {
                             <select
                                 value={selectedToCurrency || ""}
                                 onChange={(e) => {
-                                    const id = parseInt(e.target.value);
+                                    const id = parseInt(e.target.value, 10);
                                     setSelectedToCurrency(id);
                                     if (selectedFromCurrency && id) {
                                         loadRates(selectedFromCurrency, id);

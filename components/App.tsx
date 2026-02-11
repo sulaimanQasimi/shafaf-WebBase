@@ -5,14 +5,12 @@ import {
   openDatabase,
   isDatabaseOpen,
   createDatabase,
-  createDailyBackup,
 } from "@/lib/db";
 import { getDashboardStats, formatPersianNumber, formatLargeNumber } from "@/lib/dashboard";
 import { playClickSound } from "@/lib/sound";
 import { getCompanySettings, initCompanySettingsTable, type CompanySettings as CompanySettingsType } from "@/lib/company";
 import { applyFont } from "@/lib/fonts";
 import { checkForUpdatesOnStartup } from "@/lib/updater";
-import { startCredentialSync } from "@/lib/puter";
 import Login from "@/components/Login";
 import DatabaseConfig from "@/components/DatabaseConfig";
 import CurrencyManagement from "@/components/Currency";
@@ -182,39 +180,6 @@ function App() {
       console.log("Update check:", error);
     });
   }, []);
-
-  // Sync Puter credentials from ai.html
-  useEffect(() => {
-    const cleanup = startCredentialSync(5000); // Check every 5 seconds
-    return cleanup;
-  }, []);
-
-  // Daily database backup: start when user logs in, run once after delay then every 24 hours
-  useEffect(() => {
-    if (!user) return;
-
-    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-    const INITIAL_DELAY_MS = 60 * 1000; // 1 minute after login so DB is open
-
-    const runBackup = async () => {
-      try {
-        const settings = await getCompanySettings().catch(() => null);
-        const customDir = settings?.auto_backup_dir?.trim() || undefined;
-        const path = await createDailyBackup(customDir);
-        console.log("Daily backup completed:", path);
-      } catch (err) {
-        console.error("Daily backup failed:", err);
-      }
-    };
-
-    const initialTimer = window.setTimeout(runBackup, INITIAL_DELAY_MS);
-    const intervalId = window.setInterval(runBackup, ONE_DAY_MS);
-
-    return () => {
-      window.clearTimeout(initialTimer);
-      window.clearInterval(intervalId);
-    };
-  }, [user]);
 
   // Global keyboard shortcut: Ctrl+T to open sales create modal
   useEffect(() => {

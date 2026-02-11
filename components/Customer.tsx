@@ -379,7 +379,7 @@ export default function CustomerManagement({ onBack, onNavigateToBalancePage, on
     try {
       setLoading(true);
       const amount = parseFloat(paymentFormData.amount);
-      const account_id = paymentFormData.account_id ? parseInt(paymentFormData.account_id) : null;
+      const account_id = paymentFormData.account_id ? parseInt(paymentFormData.account_id, 10) : null;
       await createSalePayment(
         selectedSaleForPayment.id,
         account_id,

@@ -369,7 +369,7 @@ export default function JournalEntries({ onBack }: JournalEntriesProps) {
             // Reindex remaining inputs
             const reindexed: { [key: number]: { debit: string; credit: string } } = {};
             Object.keys(newInputValues).forEach((key) => {
-                const oldIndex = parseInt(key);
+                const oldIndex = parseInt(key, 10);
                 if (oldIndex > index) {
                     reindexed[oldIndex - 1] = newInputValues[oldIndex];
                 } else if (oldIndex < index) {
@@ -384,7 +384,7 @@ export default function JournalEntries({ onBack }: JournalEntriesProps) {
             // Reindex remaining queries
             const reindexedQueries: { [key: number]: string } = {};
             Object.keys(newAccountQueries).forEach((key) => {
-                const oldIndex = parseInt(key);
+                const oldIndex = parseInt(key, 10);
                 if (oldIndex > index) {
                     reindexedQueries[oldIndex - 1] = newAccountQueries[oldIndex] || '';
                 } else if (oldIndex < index) {
@@ -1269,7 +1269,7 @@ function CreateEntryModal({
                                                 />
                                                 <select
                                                     value={line.account_id}
-                                                    onChange={(e) => updateLine(index, 'account_id', parseInt(e.target.value))}
+                                                    onChange={(e) => updateLine(index, 'account_id', parseInt(e.target.value, 10))}
                                                     className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-500"
                                                     dir="rtl"
                                                 >
@@ -1290,7 +1290,7 @@ function CreateEntryModal({
                                             </label>
                                             <select
                                                 value={line.currency_id}
-                                                onChange={(e) => updateLine(index, 'currency_id', parseInt(e.target.value))}
+                                                onChange={(e) => updateLine(index, 'currency_id', parseInt(e.target.value, 10))}
                                                 className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-500"
                                                 dir="rtl"
                                             >

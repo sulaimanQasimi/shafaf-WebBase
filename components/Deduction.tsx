@@ -194,7 +194,7 @@ export default function DeductionManagement({ onBack }: DeductionManagementProps
             return;
         }
 
-        if (!formData.year || parseInt(formData.year) <= 0) {
+        if (!formData.year || parseInt(formData.year, 10) <= 0) {
             toast.error(translations.errors.yearRequired);
             return;
         }
@@ -216,14 +216,23 @@ export default function DeductionManagement({ onBack }: DeductionManagementProps
 
         const amount = parseFloat(formData.amount);
         const rate = parseFloat(formData.rate) || 1;
-        const year = parseInt(formData.year);
+        const year = parseInt(formData.year, 10);
+        const employeeId = parseInt(formData.employee_id, 10);
+        if (Number.isNaN(employeeId)) {
+            toast.error(translations.errors.employeeRequired);
+            return;
+        }
+        if (Number.isNaN(year)) {
+            toast.error(translations.errors.yearRequired);
+            return;
+        }
 
         try {
             setLoading(true);
             if (editingDeduction) {
                 await updateDeduction(
                     editingDeduction.id,
-                    parseInt(formData.employee_id),
+                    employeeId,
                     year,
                     formData.month,
                     formData.currency,
@@ -233,7 +242,7 @@ export default function DeductionManagement({ onBack }: DeductionManagementProps
                 toast.success(translations.success.updated);
             } else {
                 await createDeduction(
-                    parseInt(formData.employee_id),
+                    employeeId,
                     year,
                     formData.month,
                     formData.currency,

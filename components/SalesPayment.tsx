@@ -189,8 +189,8 @@ export default function SalesPaymentManagement({ onBack }: SalesPaymentManagemen
         }
 
         const amount = parseFloat(formData.amount);
-        const sale_id = parseInt(formData.sale_id);
-        const account_id = formData.account_id ? parseInt(formData.account_id) : null;
+        const sale_id = parseInt(formData.sale_id, 10);
+        const account_id = formData.account_id ? parseInt(formData.account_id, 10) : null;
         const sale = sales.find(s => s.id === sale_id);
 
         try {

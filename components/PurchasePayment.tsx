@@ -237,8 +237,8 @@ export default function PurchasePaymentManagement({ onBack }: PurchasePaymentMan
 
         const amount = parseFloat(formData.amount);
         const rate = parseFloat(formData.rate) || 1;
-        const purchase_id = parseInt(formData.purchase_id);
-        const account_id = formData.account_id ? parseInt(formData.account_id) : null;
+        const purchase_id = parseInt(formData.purchase_id, 10);
+        const account_id = formData.account_id ? parseInt(formData.account_id, 10) : null;
 
         try {
             setLoading(true);

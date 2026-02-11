@@ -570,7 +570,7 @@ export default function PurchaseManagement({ onBack }: PurchaseManagementProps) 
           const selectedCurrency = currencies.find(c => c.name === paymentFormData.currency);
           if (selectedCurrency) {
             const balance = await getAccountBalanceByCurrency(
-              parseInt(paymentFormData.account_id),
+              parseInt(paymentFormData.account_id, 10),
               selectedCurrency.id
             );
             setSelectedAccountBalance(balance);
@@ -607,7 +607,7 @@ export default function PurchaseManagement({ onBack }: PurchaseManagementProps) 
       const rate = parseFloat(paymentFormData.rate) || 1;
       await createPurchasePayment(
         viewingPurchase.purchase.id,
-        paymentFormData.account_id ? parseInt(paymentFormData.account_id) : null,
+        paymentFormData.account_id ? parseInt(paymentFormData.account_id, 10) : null,
         amount,
         paymentFormData.currency,
         rate,
@@ -946,7 +946,7 @@ export default function PurchaseManagement({ onBack }: PurchaseManagementProps) 
                       </label>
                       <select
                         value={formData.supplier_id}
-                        onChange={(e) => setFormData({ ...formData, supplier_id: parseInt(e.target.value) })}
+                        onChange={(e) => setFormData({ ...formData, supplier_id: parseInt(e.target.value, 10) })}
                         required
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
                         dir="rtl"
@@ -976,7 +976,7 @@ export default function PurchaseManagement({ onBack }: PurchaseManagementProps) 
                       </label>
                       <select
                         value={formData.currency_id}
-                        onChange={(e) => setFormData({ ...formData, currency_id: parseInt(e.target.value) })}
+                        onChange={(e) => setFormData({ ...formData, currency_id: parseInt(e.target.value, 10) })}
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
                         dir="rtl"
                       >
@@ -1154,7 +1154,7 @@ export default function PurchaseManagement({ onBack }: PurchaseManagementProps) 
                                 </label>
                                 <select
                                   value={item.unit_id}
-                                  onChange={(e) => updateItem(index, 'unit_id', parseInt(e.target.value))}
+                                  onChange={(e) => updateItem(index, 'unit_id', parseInt(e.target.value, 10))}
                                   className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:border-purple-500"
                                   dir="rtl"
                                 >

@@ -279,8 +279,8 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
                 await updateAccount(
                     editingAccount.id,
                     accountFormData.name,
-                    accountFormData.currency_id ? parseInt(accountFormData.currency_id) : null,
-                    accountFormData.coa_category_id ? parseInt(accountFormData.coa_category_id) : null,
+                    accountFormData.currency_id ? parseInt(accountFormData.currency_id, 10) : null,
+                    accountFormData.coa_category_id ? parseInt(accountFormData.coa_category_id, 10) : null,
                     accountFormData.account_code || null,
                     accountFormData.account_type || null,
                     parseFloat(accountFormData.initial_balance) || 0,
@@ -291,8 +291,8 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
             } else {
                 await createAccount(
                     accountFormData.name,
-                    accountFormData.currency_id ? parseInt(accountFormData.currency_id) : null,
-                    accountFormData.coa_category_id ? parseInt(accountFormData.coa_category_id) : null,
+                    accountFormData.currency_id ? parseInt(accountFormData.currency_id, 10) : null,
+                    accountFormData.coa_category_id ? parseInt(accountFormData.coa_category_id, 10) : null,
                     accountFormData.account_code || null,
                     accountFormData.account_type || null,
                     parseFloat(accountFormData.initial_balance) || 0,

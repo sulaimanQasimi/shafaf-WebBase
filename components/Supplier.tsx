@@ -331,7 +331,7 @@ export default function SupplierManagement({ onBack, onNavigateToBalancePage, on
       setLoading(true);
       const amount = parseFloat(paymentFormData.amount);
       const rate = parseFloat(paymentFormData.rate) || 1;
-      const account_id = paymentFormData.account_id ? parseInt(paymentFormData.account_id) : null;
+      const account_id = paymentFormData.account_id ? parseInt(paymentFormData.account_id, 10) : null;
       await createPurchasePayment(
         selectedPurchaseForPayment.id,
         account_id,

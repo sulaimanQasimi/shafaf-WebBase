@@ -213,16 +213,16 @@ export default function Report({ onBack }: ReportProps) {
           data = await generateProductReport(from, to);
           break;
         case "customers":
-          data = await generateCustomerReport(from, to, selectedCustomerId ? parseInt(selectedCustomerId) : null);
+          data = await generateCustomerReport(from, to, selectedCustomerId ? parseInt(selectedCustomerId, 10) : null);
           break;
         case "suppliers":
-          data = await generateSupplierReport(from, to, selectedSupplierId ? parseInt(selectedSupplierId) : null);
+          data = await generateSupplierReport(from, to, selectedSupplierId ? parseInt(selectedSupplierId, 10) : null);
           break;
         case "receivables":
-          data = await generateReceivablesReport(from, to, selectedCustomerId ? parseInt(selectedCustomerId) : null);
+          data = await generateReceivablesReport(from, to, selectedCustomerId ? parseInt(selectedCustomerId, 10) : null);
           break;
         case "payables":
-          data = await generatePayablesReport(from, to, selectedSupplierId ? parseInt(selectedSupplierId) : null);
+          data = await generatePayablesReport(from, to, selectedSupplierId ? parseInt(selectedSupplierId, 10) : null);
           break;
         case "profit":
           data = await generateProfitReport(from, to, {

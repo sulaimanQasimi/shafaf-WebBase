@@ -157,7 +157,7 @@ export default function CoaManagement({ onBack }: CoaManagementProps) {
             if (editingCategory) {
                 await updateCoaCategory(
                     editingCategory.id,
-                    formData.parent_id ? parseInt(formData.parent_id) : null,
+                    formData.parent_id ? parseInt(formData.parent_id, 10) : null,
                     formData.name,
                     formData.code,
                     formData.category_type
@@ -165,7 +165,7 @@ export default function CoaManagement({ onBack }: CoaManagementProps) {
                 toast.success(translations.success.updated);
             } else {
                 await createCoaCategory(
-                    formData.parent_id ? parseInt(formData.parent_id) : null,
+                    formData.parent_id ? parseInt(formData.parent_id, 10) : null,
                     formData.name,
                     formData.code,
                     formData.category_type

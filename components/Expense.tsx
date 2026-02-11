@@ -330,8 +330,8 @@ export default function ExpenseManagement({ onBack }: ExpenseManagementProps) {
         const amount = parseFloat(formData.amount);
         const rate = parseFloat(formData.rate) || 1;
         const total = amount * rate;
-        const expense_type_id = parseInt(formData.expense_type_id);
-        const account_id = formData.account_id ? parseInt(formData.account_id) : null;
+        const expense_type_id = parseInt(formData.expense_type_id, 10);
+        const account_id = formData.account_id ? parseInt(formData.account_id, 10) : null;
 
         try {
             setLoading(true);

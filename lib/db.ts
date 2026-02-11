@@ -75,50 +75,6 @@ export async function getDatabasePath(): Promise<string> {
 }
 
 /**
- * Backup database - returns the database path
- * @returns Promise with the database path string
- */
-export async function backupDatabase(): Promise<string> {
-  return await invoke<string>("backup_database");
-}
-
-/**
- * Save backup to a user-selected path (from save dialog). Backend performs the copy.
- * @param destPath Full path where the backup file should be saved
- * @returns Promise with the destination path on success
- */
-export async function saveBackupToPath(destPath: string): Promise<string> {
-  return await invoke<string>("save_backup_to_path", { destPath });
-}
-
-/**
- * Get the folder path where automatic daily backups are stored.
- * @returns Promise with the backups directory path
- */
-export async function getBackupsDir(): Promise<string> {
-  return await invoke<string>("get_backups_dir");
-}
-
-/**
- * Create a daily backup. If customDir is set, backup is saved there; otherwise in app data backups folder.
- * Used by the automatic daily backup scheduler.
- * @param customDir Optional directory path from company settings (user-chosen auto backup location)
- * @returns Promise with the backup file path
- */
-export async function createDailyBackup(customDir?: string | null): Promise<string> {
-  return await invoke<string>("create_daily_backup", { customDir: customDir ?? null });
-}
-
-/**
- * Restore database from backup file
- * @param backupPath Path to the backup database file
- * @returns Promise with success message
- */
-export async function restoreDatabase(backupPath: string): Promise<string> {
-  return await invoke<string>("restore_database", { backupPath });
-}
-
-/**
  * Close the current database connection
  * @returns Promise with success message
  */

@@ -13,7 +13,17 @@ export async function invoke<T = unknown>(cmd: string, args?: Record<string, unk
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || res.statusText);
+    const msg =
+      err && typeof err === "object" && "error" in err
+        ? (err as { error?: string }).error
+        : err && typeof err === "object" && "message" in err
+          ? (err as { message?: string }).message
+          : res.statusText;
+    throw new Error(String(msg ?? res.statusText));
   }
-  return res.json() as Promise<T>;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new Error("Invalid JSON in response");
+  }
 }

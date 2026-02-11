@@ -190,8 +190,8 @@ export default function SalaryManagement({ onBack, onNavigateToDeduction }: Sala
         const fetchDeductions = async () => {
             if (formData.employee_id && formData.year && formData.month) {
                 try {
-                    const employeeId = parseInt(formData.employee_id);
-                    const year = parseInt(formData.year);
+                    const employeeId = parseInt(formData.employee_id, 10);
+                    const year = parseInt(formData.year, 10);
                     const fetchedDeductions = await getDeductionsByEmployeeYearMonth(
                         employeeId,
                         year,
@@ -252,7 +252,7 @@ export default function SalaryManagement({ onBack, onNavigateToDeduction }: Sala
             return;
         }
 
-        if (!formData.year || parseInt(formData.year) <= 0) {
+        if (!formData.year || parseInt(formData.year, 10) <= 0) {
             toast.error(translations.errors.yearRequired);
             return;
         }
@@ -267,13 +267,24 @@ export default function SalaryManagement({ onBack, onNavigateToDeduction }: Sala
             return;
         }
 
+        const employeeId = parseInt(formData.employee_id, 10);
+        const year = parseInt(formData.year, 10);
+        if (Number.isNaN(employeeId)) {
+            toast.error(translations.errors.employeeRequired);
+            return;
+        }
+        if (Number.isNaN(year)) {
+            toast.error(translations.errors.yearRequired);
+            return;
+        }
+
         try {
             setLoading(true);
             if (editingSalary) {
                 await updateSalary(
                     editingSalary.id,
-                    parseInt(formData.employee_id),
-                    parseInt(formData.year),
+                    employeeId,
+                    year,
                     formData.month,
                     parseFloat(formData.amount),
                     parseFloat(formData.deductions) || 0,
@@ -282,8 +293,8 @@ export default function SalaryManagement({ onBack, onNavigateToDeduction }: Sala
                 toast.success(translations.success.updated);
             } else {
                 await createSalary(
-                    parseInt(formData.employee_id),
-                    parseInt(formData.year),
+                    employeeId,
+                    year,
                     formData.month,
                     parseFloat(formData.amount),
                     parseFloat(formData.deductions) || 0,

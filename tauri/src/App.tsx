@@ -12,7 +12,6 @@ import { getCompanySettings, initCompanySettingsTable, type CompanySettings as C
 import { applyFont } from "./utils/fonts";
 import { getLicenseKey, validateLicenseKey, checkLicenseWithServer, getLicenseExpiry, refreshLicenseExpiryFromServer } from "./utils/license";
 import { checkForUpdatesOnStartup } from "./utils/updater";
-import { startCredentialSync } from "./utils/puter";
 import Login from "./components/Login";
 import License from "./components/License";
 import DatabaseConfig from "./components/DatabaseConfig";
@@ -187,12 +186,6 @@ function App() {
       // Silently fail - updates are optional
       console.log("Update check:", error);
     });
-  }, []);
-
-  // Sync Puter credentials from ai.html
-  useEffect(() => {
-    const cleanup = startCredentialSync(5000); // Check every 5 seconds
-    return cleanup;
   }, []);
 
   // Daily database backup: start when user logs in, run once after delay then every 24 hours
