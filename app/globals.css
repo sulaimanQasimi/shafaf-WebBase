@@ -6,6 +6,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --table-bg: rgba(255, 255, 255, 0.7);
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --table-bg: rgba(15, 10, 30, 0.6);
 }
 
 @theme inline {
@@ -16,9 +23,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --table-bg: rgba(15, 10, 30, 0.6);
   }
 }
 
@@ -33,12 +41,15 @@ body {
   0% {
     transform: translate(0px, 0px) scale(1);
   }
+
   33% {
     transform: translate(30px, -50px) scale(1.1);
   }
+
   66% {
     transform: translate(-20px, 20px) scale(0.9);
   }
+
   100% {
     transform: translate(0px, 0px) scale(1);
   }
@@ -54,4 +65,45 @@ body {
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+/* Header gradient accent animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+  color: inherit;
 }

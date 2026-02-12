@@ -7,7 +7,7 @@ interface Column<T> {
     label: string;
     sortable?: boolean;
     render?: (item: T) => React.ReactNode;
-    className?: string; // For custom width or alignment
+    className?: string;
 }
 
 interface TableProps<T> {
@@ -49,55 +49,86 @@ export default function Table<T extends { id: number | string }>({
     };
 
     return (
-        <div className="w-full min-w-0 space-y-4">
-            <div className="min-w-0 overflow-x-auto rounded-3xl border border-gray-100 dark:border-gray-700/50 shadow-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl">
+        <div className="w-full min-w-0 space-y-5">
+            <div className="min-w-0 overflow-x-auto rounded-2xl border border-gray-200 dark:border-purple-500/10 shadow-lg dark:shadow-2xl dark:shadow-purple-900/10 overflow-hidden bg-white dark:bg-[#110d22]/80">
+                {/* Gradient accent top border */}
+                <div className="h-[2px]" style={{
+                    background: "linear-gradient(90deg, #8b5cf6, #3b82f6, #ec4899, #8b5cf6)",
+                    backgroundSize: "200% 100%",
+                    animation: "gradient-shift 4s linear infinite",
+                }} />
+
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-gray-50/50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-700/50">
+                        <tr className="border-b border-gray-100 dark:border-purple-500/10 bg-gray-50/80 dark:bg-purple-950/20">
                             {columns.map((col, idx) => (
                                 <th
                                     key={idx}
-                                    className={`px-3 py-2 sm:px-6 sm:py-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-300 ${col.sortable ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" : ""
+                                    className={`px-3 py-3 sm:px-5 sm:py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-purple-300/60 ${col.sortable ? "cursor-pointer select-none group hover:text-purple-600 dark:hover:text-purple-200 hover:bg-gray-100/60 dark:hover:bg-purple-900/20 transition-colors" : ""
                                         } ${col.className || ""}`}
                                     onClick={() => col.sortable && handleSort(col.key as string)}
                                 >
                                     <div className="flex items-center gap-2">
-                                        {col.label}
+                                        <span className="transition-colors duration-200">
+                                            {col.label}
+                                        </span>
                                         {col.sortable && sortBy === col.key && (
-                                            <span className="text-purple-600 dark:text-purple-400">
+                                            <motion.span
+                                                initial={{ scale: 0, rotate: -90 }}
+                                                animate={{ scale: 1, rotate: 0 }}
+                                                className="flex items-center justify-center w-5 h-5 rounded-md"
+                                                style={{
+                                                    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                                                    boxShadow: "0 2px 8px rgba(139,92,246,0.3)",
+                                                }}
+                                            >
                                                 {sortOrder === "asc" ? (
-                                                    <ChevronUp className="w-4 h-4" />
+                                                    <ChevronUp className="w-3.5 h-3.5 text-white" />
                                                 ) : (
-                                                    <ChevronDown className="w-4 h-4" />
+                                                    <ChevronDown className="w-3.5 h-3.5 text-white" />
                                                 )}
-                                            </span>
+                                            </motion.span>
                                         )}
                                         {col.sortable && sortBy !== col.key && (
-                                            <span className="text-gray-400 opacity-0 group-hover:opacity-50">
-                                                <ChevronDown className="w-4 h-4" />
+                                            <span className="text-gray-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                <ChevronDown className="w-3.5 h-3.5" />
                                             </span>
                                         )}
                                     </div>
                                 </th>
                             ))}
-                            {actions && <th className="px-3 py-2 sm:px-6 sm:py-4 text-right text-sm font-semibold text-gray-600 dark:text-gray-300">عملیات</th>}
+                            {actions && (
+                                <th className="px-3 py-3 sm:px-5 sm:py-4 text-right text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-purple-300/60">
+                                    عملیات
+                                </th>
+                            )}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700/30">
+                    <tbody>
                         {loading ? (
                             <tr>
                                 <td colSpan={columns.length + (actions ? 1 : 0)} className="py-20 text-center">
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                        className="w-8 h-8 mx-auto border-2 border-purple-600 border-t-transparent rounded-full"
-                                    />
+                                    <div className="flex flex-col items-center gap-3">
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                            className="w-10 h-10 rounded-full border-[3px] border-purple-200 dark:border-purple-500/20 border-t-purple-500 dark:border-t-purple-400"
+                                        />
+                                        <span className="text-sm text-gray-400 dark:text-purple-300/30">در حال بارگذاری...</span>
+                                    </div>
                                 </td>
                             </tr>
                         ) : data.length === 0 ? (
                             <tr>
-                                <td colSpan={columns.length + (actions ? 1 : 0)} className="py-20 text-center text-gray-500 dark:text-gray-400">
-                                    هیچ داده‌ای یافت نشد
+                                <td colSpan={columns.length + (actions ? 1 : 0)} className="py-20 text-center">
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-purple-50 dark:bg-purple-900/20">
+                                            <svg className="w-8 h-8 text-purple-300 dark:text-purple-400/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                            </svg>
+                                        </div>
+                                        <span className="text-sm text-gray-400 dark:text-gray-500">هیچ داده‌ای یافت نشد</span>
+                                    </div>
                                 </td>
                             </tr>
                         ) : (
@@ -105,19 +136,20 @@ export default function Table<T extends { id: number | string }>({
                                 {data.map((item, index) => (
                                     <motion.tr
                                         key={item.id}
-                                        initial={{ opacity: 0, y: 10 }}
+                                        initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="group hover:bg-purple-50/50 dark:hover:bg-gray-700/30 transition-colors"
+                                        exit={{ opacity: 0, scale: 0.97 }}
+                                        transition={{ delay: index * 0.03, duration: 0.25 }}
+                                        className={`group relative transition-all duration-200 border-b border-gray-100 dark:border-purple-500/5 last:border-b-0 hover:bg-purple-50/60 dark:hover:bg-purple-900/15 ${index % 2 === 1 ? "bg-gray-50/40 dark:bg-purple-950/10" : ""
+                                            }`}
                                     >
                                         {columns.map((col, idx) => (
-                                            <td key={idx} className="px-3 py-2 sm:px-6 sm:py-4 text-sm text-gray-700 dark:text-gray-300">
+                                            <td key={idx} className="px-3 py-3 sm:px-5 sm:py-4 text-sm text-gray-700 dark:text-gray-300 transition-colors duration-200 group-hover:text-gray-900 dark:group-hover:text-white">
                                                 {col.render ? col.render(item) : (item[col.key as keyof T] as React.ReactNode)}
                                             </td>
                                         ))}
                                         {actions && (
-                                            <td className="px-3 py-2 sm:px-6 sm:py-4">
+                                            <td className="px-3 py-3 sm:px-5 sm:py-4">
                                                 {actions(item)}
                                             </td>
                                         )}

@@ -116,7 +116,7 @@ export async function getUsers(
     sortBy: string = "created_at",
     sortOrder: "asc" | "desc" = "desc"
 ): Promise<PaginatedResponse<User>> {
-    const response = await invoke<PaginatedResponse<User>>("get_users", {
+    const response = await invoke<PaginatedResponse<User> | User[]>("get_users", {
         page,
         perPage,
         search: search || null,
@@ -124,12 +124,27 @@ export async function getUsers(
         sortOrder: sortOrder || null,
     });
 
+    // API may return a plain array (e.g. Next.js route) or PaginatedResponse (e.g. Tauri)
+    const rawItems = Array.isArray(response)
+        ? response
+        : (response?.items ?? []);
+    const total = Array.isArray(response)
+        ? response.length
+        : (response?.total ?? rawItems.length);
+
+    const items = rawItems.map((user) => ({
+        ...user,
+        is_active: Boolean(user.is_active),
+    }));
+
     return {
-        ...response,
-        items: response.items.map((user) => ({
-            ...user,
-            is_active: Boolean(user.is_active),
-        })),
+        items,
+        total,
+        page: Array.isArray(response) ? page : (response?.page ?? page),
+        per_page: Array.isArray(response) ? perPage : (response?.per_page ?? perPage),
+        total_pages: Array.isArray(response)
+            ? Math.max(1, Math.ceil(response.length / perPage))
+            : (response?.total_pages ?? Math.max(1, Math.ceil(total / perPage))),
     };
 }
 

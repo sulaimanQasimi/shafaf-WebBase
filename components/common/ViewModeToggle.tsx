@@ -17,32 +17,54 @@ export default function ViewModeToggle({
     thumbnailLabel = "کارت",
 }: ViewModeToggleProps) {
     return (
-        <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1 shadow-sm">
+        <div className="flex items-center gap-1 p-1 rounded-xl border border-gray-200 dark:border-purple-500/10 bg-white dark:bg-[#110d22]/60">
             <motion.button
                 type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={() => onChange("table")}
                 title={tableLabel}
-                className={`p-2.5 rounded-lg transition-colors ${viewMode === "table"
-                    ? "bg-purple-600 text-white shadow-md"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
+                className={`relative p-2.5 rounded-lg transition-all duration-200 overflow-hidden ${viewMode === "table"
+                    ? "text-white"
+                    : "text-gray-500 dark:text-purple-300/40 hover:text-purple-600 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10"
                     }`}
             >
-                <List className="w-5 h-5" />
+                {viewMode === "table" && (
+                    <motion.div
+                        layoutId="viewModeActive"
+                        className="absolute inset-0 rounded-lg"
+                        style={{
+                            background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                            boxShadow: "0 4px 15px rgba(139,92,246,0.35)",
+                        }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    />
+                )}
+                <List className="w-5 h-5 relative z-10" />
             </motion.button>
             <motion.button
                 type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={() => onChange("thumbnail")}
                 title={thumbnailLabel}
-                className={`p-2.5 rounded-lg transition-colors ${viewMode === "thumbnail"
-                    ? "bg-purple-600 text-white shadow-md"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
+                className={`relative p-2.5 rounded-lg transition-all duration-200 overflow-hidden ${viewMode === "thumbnail"
+                    ? "text-white"
+                    : "text-gray-500 dark:text-purple-300/40 hover:text-purple-600 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10"
                     }`}
             >
-                <LayoutGrid className="w-5 h-5" />
+                {viewMode === "thumbnail" && (
+                    <motion.div
+                        layoutId="viewModeActive"
+                        className="absolute inset-0 rounded-lg"
+                        style={{
+                            background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                            boxShadow: "0 4px 15px rgba(139,92,246,0.35)",
+                        }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    />
+                )}
+                <LayoutGrid className="w-5 h-5 relative z-10" />
             </motion.button>
         </div>
     );
