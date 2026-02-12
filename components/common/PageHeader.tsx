@@ -80,19 +80,7 @@ export default function PageHeader({
                         whileHover={{ scale: 1.02, x: -3 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={onBack}
-                        className="group relative flex items-center gap-3 px-5 py-3 rounded-xl border border-purple-200/30 dark:border-purple-500/15 transition-all duration-300 overflow-hidden"
-                        style={{
-                            background: "rgba(255,255,255,0.6)",
-                            backdropFilter: "blur(12px)",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(139,92,246,0.3)";
-                            e.currentTarget.style.boxShadow = "0 8px 30px rgba(139,92,246,0.12)";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "";
-                            e.currentTarget.style.boxShadow = "";
-                        }}
+                        className="group relative flex items-center gap-3 px-5 py-3 rounded-xl border border-gray-200 dark:border-purple-500/15 bg-white dark:bg-[#110d22]/60 hover:border-purple-300 dark:hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 dark:hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden"
                     >
                         {/* Animated arrow */}
                         <motion.div
@@ -118,7 +106,7 @@ export default function PageHeader({
 
                         {/* Shimmer on hover */}
                         <motion.div
-                            className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-purple-200/20 dark:via-purple-500/10 to-transparent opacity-0 group-hover:opacity-100"
+                            className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-purple-100/40 dark:via-purple-500/10 to-transparent opacity-0 group-hover:opacity-100"
                             initial={{ x: "-200%" }}
                             whileHover={{ x: "200%" }}
                             transition={{ duration: 0.8, ease: "easeInOut" }}
@@ -158,9 +146,9 @@ export default function PageHeader({
                             >
                                 {/* Glow layer */}
                                 <motion.span
-                                    className="absolute inset-0 text-2xl font-black leading-none bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 dark:from-purple-300 dark:via-blue-300 dark:to-indigo-300 blur-2xl opacity-30 dark:opacity-40 pointer-events-none select-none"
+                                    className="absolute inset-0 text-2xl font-black leading-none bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 dark:from-purple-300 dark:via-blue-300 dark:to-indigo-300 blur-2xl opacity-20 dark:opacity-40 pointer-events-none select-none"
                                     aria-hidden="true"
-                                    animate={{ opacity: [0.3, 0.5, 0.3] }}
+                                    animate={{ opacity: [0.2, 0.35, 0.2] }}
                                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                                 >
                                     {title}
@@ -211,29 +199,20 @@ export default function PageHeader({
                                             background: variantGradients[variant],
                                             boxShadow: variantShadows[variant],
                                         }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.boxShadow = variantShadows[variant].replace("0.35", "0.5").replace("0.3", "0.45");
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.boxShadow = variantShadows[variant];
-                                        }}
                                     >
                                         {/* Shine sweep */}
                                         <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
 
-                                        {/* Icon */}
                                         {action.icon && (
                                             <span className="relative z-10">
                                                 {action.icon}
                                             </span>
                                         )}
 
-                                        {/* Label */}
                                         <span className="relative z-10 text-sm tracking-wide">
                                             {action.label}
                                         </span>
 
-                                        {/* Subtle inner border */}
                                         <div className="absolute inset-0 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     </motion.button>
                                 );

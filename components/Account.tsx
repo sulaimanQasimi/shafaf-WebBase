@@ -26,6 +26,7 @@ import { formatPersianDate, getCurrentPersianDate, persianToGeorgian } from "@/l
 import PageHeader from "./common/PageHeader";
 import CoaManagement from "./CoaManagement";
 import JournalEntries from "./JournalEntries";
+import { Plus, Edit, Trash2, ArrowUpCircle, ArrowDownCircle, Search, Wallet, History, FileText, Settings, X, Save, CheckCircle, AlertTriangle } from "lucide-react";
 
 // Dari translations
 const translations = {
@@ -141,10 +142,7 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
                 await initAccountsTable();
                 await initAccountTransactionsTable();
                 await initAccountCurrencyBalancesTable();
-                // Initialize standard COA categories if they don't exist
-                await initStandardCoaCategories().catch(() => {
-                    // Categories might already exist, ignore error
-                });
+                await initStandardCoaCategories().catch(() => { });
             } catch (err) {
                 console.log("Table initialization:", err);
             }
@@ -383,6 +381,11 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
             toast.success(translations.success.deleted);
             setDeleteConfirm(null);
             await loadData();
+            if (selectedAccount?.id === id) {
+                setSelectedAccount(null);
+                setTransactions([]);
+                setAccountBalances([]);
+            }
         } catch (error: any) {
             toast.error(translations.errors.delete);
             console.error("Error deleting account:", error);
@@ -402,32 +405,28 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
         await loadTransactions(account.id);
     };
 
-    // If showing COA management, render that component
     if (showCoaManagement) {
-        return (
-            <CoaManagement 
-                onBack={() => {
-                    setShowCoaManagement(false);
-                    loadData(); // Reload accounts to refresh COA categories
-                }} 
-            />
-        );
+        return <CoaManagement onBack={() => { setShowCoaManagement(false); loadData(); }} />;
     }
 
-    // If showing Journal Entries, render that component
     if (showJournalEntries) {
-        return (
-            <JournalEntries 
-                onBack={() => {
-                    setShowJournalEntries(false);
-                }} 
-            />
-        );
+        return <JournalEntries onBack={() => { setShowJournalEntries(false); }} />;
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6" dir="rtl">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/20 dark:bg-none p-4 sm:p-6 lg:p-8" dir="rtl">
+            {/* Dark mode mesh background */}
+            <div className="fixed inset-0 -z-10 bg-gradient-to-br from-gray-50 via-purple-50/30 to-blue-50/20 dark:from-[#0f0a1e] dark:via-[#1a1035] dark:to-[#0d1b2a]" />
+            <div className="fixed inset-0 overflow-hidden pointer-events-none -z-[5]">
+                <motion.div
+                    animate={{ x: [0, 60, -30, 40, 0], y: [0, -40, 30, -20, 0], scale: [1, 1.15, 0.9, 1.05, 1] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full opacity-30 dark:opacity-100"
+                    style={{ background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", filter: "blur(60px)" }}
+                />
+            </div>
+
+            <div className="max-w-7xl mx-auto">
                 <PageHeader
                     title={translations.title}
                     onBack={onBack}
@@ -436,673 +435,458 @@ export default function AccountManagement({ onBack }: AccountManagementProps) {
                         {
                             label: "دفتر روزنامه",
                             onClick: () => setShowJournalEntries(true),
-                            variant: "secondary" as const,
-                            icon: (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            )
+                            variant: "secondary",
+                            icon: <FileText className="w-4 h-4" />
                         },
                         {
-                            label: "مدیریت دسته‌بندی حساب‌ها (COA)",
+                            label: "COA دسته",
                             onClick: () => setShowCoaManagement(true),
-                            variant: "secondary" as const,
-                            icon: (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                </svg>
-                            )
+                            variant: "secondary",
+                            icon: <Settings className="w-4 h-4" />
                         },
                         {
                             label: translations.addNew,
                             onClick: () => handleOpenAccountModal(),
-                            variant: "primary" as const
+                            variant: "primary",
+                            icon: <Plus className="w-4 h-4" />
                         }
                     ]}
                 />
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Accounts List */}
-                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl shadow-lg p-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">حساب‌ها</h3>
-                        {loading && accounts.length === 0 ? (
-                            <div className="text-center py-8">
-                                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                            </div>
-                        ) : accounts.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                {translations.noAccounts}
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {accounts.map((account) => (
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mt-8">
+                    {/* ─── Accounts List Panel ─── */}
+                    <motion.div
+                        className="xl:col-span-5 flex flex-col gap-5"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
+                        {/* Search/Filter placeholder could go here */}
+
+                        <div className="space-y-4">
+                            {accounts.length === 0 && !loading ? (
+                                <div className="text-center py-12 bg-white/50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+                                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-400">
+                                        <Wallet className="w-8 h-8" />
+                                    </div>
+                                    <p className="text-gray-500 dark:text-gray-400">{translations.noAccounts}</p>
+                                </div>
+                            ) : (
+                                accounts.map((account, index) => (
                                     <motion.div
                                         key={account.id}
-                                        initial={{ opacity: 0, y: 20 }}
+                                        initial={{ opacity: 0, y: 15 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        whileHover={{ scale: 1.02 }}
-                                        className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                                            selectedAccount?.id === account.id
-                                                ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
-                                                : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 hover:border-purple-300 dark:hover:border-purple-700"
-                                        }`}
+                                        transition={{ delay: index * 0.05 }}
                                         onClick={() => handleSelectAccount(account)}
+                                        className={`group relative p-5 rounded-2xl border cursor-pointer transition-all duration-300 overflow-hidden ${selectedAccount?.id === account.id
+                                                ? "bg-white dark:bg-[#110d22] border-purple-500 shadow-xl shadow-purple-500/10 dark:shadow-purple-900/20"
+                                                : "bg-white/80 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700/50 hover:border-purple-300 dark:hover:border-purple-500/30 hover:shadow-lg"
+                                            }`}
                                     >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-gray-900 dark:text-white text-lg">
-                                                {account.name}
-                                            </h4>
-                                            <div className="flex gap-2">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.1 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpenAccountModal(account);
-                                                    }}
-                                                    className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.1 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeleteConfirm(account.id);
-                                                    }}
-                                                    className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </motion.button>
-                                            </div>
-                                        </div>
-                                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-2 space-y-1">
-                                            <div><span>ارز: {getCurrencyName(account.currency_id)}</span></div>
-                                            {account.account_code && (
-                                                <div><span>کد: {account.account_code}</span></div>
-                                            )}
-                                            {account.account_type && (
-                                                <div><span>نوع: {account.account_type}</span></div>
-                                            )}
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <span className="text-xs text-gray-500 dark:text-gray-500">موجودی فعلی:</span>
-                                                <span className={`font-bold text-lg ml-2 ${
-                                                    account.current_balance >= 0
-                                                        ? "text-green-600 dark:text-green-400"
-                                                        : "text-red-600 dark:text-red-400"
-                                                }`}>
-                                                    {account.current_balance.toLocaleString()}
-                                                </span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpenTransactionModal(account, "deposit");
-                                                    }}
-                                                    className="px-3 py-1.5 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg text-xs font-semibold hover:bg-green-200 dark:hover:bg-green-900/30 transition-colors"
-                                                >
-                                                    {translations.deposit}
-                                                </motion.button>
-                                                <motion.button
-                                                    whileHover={{ scale: 1.05 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpenTransactionModal(account, "withdraw");
-                                                    }}
-                                                    className="px-3 py-1.5 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-xs font-semibold hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
-                                                >
-                                                    {translations.withdraw}
-                                                </motion.button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                        {selectedAccount?.id === account.id && (
+                                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
+                                        )}
 
-                    {/* Transaction History */}
-                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl shadow-lg p-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                            {selectedAccount ? `${translations.transactionHistory} - ${selectedAccount.name}` : translations.transactionHistory}
-                        </h3>
-                        {!selectedAccount ? (
-                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                یک حساب را انتخاب کنید
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {/* Multicurrency Balances */}
-                                {accountBalances.length > 0 && (
-                                    <div className="mb-4">
-                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">موجودی‌ها بر اساس ارز:</h4>
-                                        <div className="space-y-2">
-                                            {accountBalances.map((balance: AccountCurrencyBalance) => {
-                                                const currency = currencies.find(c => c.id === balance.currency_id);
-                                                return (
-                                                    <div key={balance.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                                        <span className="text-sm text-gray-700 dark:text-gray-300">{currency?.name || `ارز ${balance.currency_id}`}</span>
-                                                        <span className={`font-bold ${
-                                                            balance.balance >= 0
-                                                                ? "text-green-600 dark:text-green-400"
-                                                                : "text-red-600 dark:text-red-400"
-                                                        }`}>
-                                                            {balance.balance.toLocaleString()}
+                                        <div className="flex justify-between items-start relative z-10">
+                                            <div className="flex items-start gap-4">
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${selectedAccount?.id === account.id
+                                                        ? "bg-gradient-to-br from-purple-500 to-blue-600 text-white shadow-lg"
+                                                        : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/30 group-hover:text-purple-600 dark:group-hover:text-purple-400"
+                                                    }`}>
+                                                    <Wallet className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">{account.name}</h3>
+                                                    <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="bg-gray-100 dark:bg-gray-700/50 px-2 py-0.5 rounded-md border border-gray-200 dark:border-gray-600">
+                                                            {getCurrencyName(account.currency_id)}
                                                         </span>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                                {/* Transaction History */}
-                                {transactions.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                        {translations.noTransactions}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                                        {transactions.map((transaction) => (
-                                            <motion.div
-                                                key={transaction.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                className={`p-4 rounded-xl border-2 ${
-                                                    transaction.transaction_type === "deposit"
-                                                        ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10"
-                                                        : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10"
-                                                }`}
-                                            >
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                                                            transaction.transaction_type === "deposit"
-                                                                ? "bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200"
-                                                                : "bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200"
-                                                        }`}>
-                                                            {transaction.transaction_type === "deposit" ? translations.deposit : translations.withdraw}
-                                                        </span>
-                                                        {transaction.is_full && (
-                                                            <span className="px-2 py-1 rounded-lg text-xs font-semibold bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200">
-                                                                {translations.full}
+                                                        {account.account_type && (
+                                                            <span className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-800/30">
+                                                                {account.account_type}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className={`font-bold text-lg ${
-                                                        transaction.transaction_type === "deposit"
-                                                            ? "text-green-600 dark:text-green-400"
-                                                            : "text-red-600 dark:text-red-400"
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenAccountModal(account); }}
+                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-blue-600 transition-colors"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(account.id); }}
+                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 flex items-end justify-between relative z-10">
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">موجودی فعلی</p>
+                                                <p className={`text-xl font-bold font-mono tracking-tight ${account.current_balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     }`}>
-                                                        {transaction.transaction_type === "deposit" ? "+" : "-"}
-                                                        {transaction.total.toLocaleString()}
-                                                    </span>
-                                                </div>
-                                                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                                    <div>
-                                                        <span>مقدار: {transaction.amount.toLocaleString()} {transaction.currency}</span>
-                                                        <span className="mx-2">•</span>
-                                                        <span>نرخ: {transaction.rate}</span>
-                                                    </div>
-                                                    <div>تاریخ: {formatPersianDate(transaction.transaction_date)}</div>
-                                                    {transaction.notes && (
-                                                        <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                                            {transaction.notes}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </motion.div>
-                                        ))}
+                                                    {account.current_balance.toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenTransactionModal(account, "deposit"); }}
+                                                    className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors text-xs font-semibold flex items-center gap-1"
+                                                >
+                                                    <ArrowDownCircle className="w-3.5 h-3.5" />
+                                                    {translations.deposit}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenTransactionModal(account, "withdraw"); }}
+                                                    className="p-2 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-xs font-semibold flex items-center gap-1"
+                                                >
+                                                    <ArrowUpCircle className="w-3.5 h-3.5" />
+                                                    {translations.withdraw}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )}
+                        </div>
+                    </motion.div>
+
+                    {/* ─── Transaction Detail Panel ─── */}
+                    <div className="xl:col-span-7">
+                        <motion.div
+                            className="bg-white/90 dark:bg-[#110d22]/80 backdrop-blur-xl rounded-3xl border border-gray-200 dark:border-purple-500/10 shadow-2xl shadow-purple-900/5 h-[calc(100vh-140px)] flex flex-col overflow-hidden sticky top-24"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            {/* Gradient Header */}
+                            <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500" />
+
+                            {!selectedAccount ? (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-400 dark:text-gray-500">
+                                    <div className="w-24 h-24 mb-6 rounded-full bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+                                        <History className="w-10 h-10 opacity-50" />
                                     </div>
-                                )}
-                            </div>
-                        )}
+                                    <h3 className="text-lg font-semibold mb-2 text-gray-600 dark:text-gray-300">حسابی انتخاب نشده است</h3>
+                                    <p className="max-w-xs mx-auto text-sm">برای مشاهده تاریخچه تراکنش‌ها و جزئیات، لطفاً یک حساب را از لیست انتخاب کنید.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                <History className="w-5 h-5 text-purple-500" />
+                                                {translations.transactionHistory}
+                                                <span className="text-gray-400 text-sm font-normal mx-2">|</span>
+                                                <span className="text-purple-600 dark:text-purple-400 text-lg">{selectedAccount.name}</span>
+                                            </h3>
+                                        </div>
+
+                                        {accountBalances.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {accountBalances.map((balance) => {
+                                                    const currency = currencies.find(c => c.id === balance.currency_id);
+                                                    return (
+                                                        <div key={balance.id} className="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center gap-2 text-sm">
+                                                            <span className="text-gray-500 dark:text-gray-400 text-xs">{currency?.name || "ارز"}:</span>
+                                                            <span className={`font-mono font-bold ${balance.balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                                                {balance.balance.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
+                                        {transactions.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <div className="inline-block p-4 rounded-full bg-gray-50 dark:bg-gray-800/50 mb-3 text-gray-400">
+                                                    <Search className="w-6 h-6" />
+                                                </div>
+                                                <p className="text-gray-500 dark:text-gray-400">{translations.noTransactions}</p>
+                                            </div>
+                                        ) : (
+                                            transactions.map((transaction, idx) => (
+                                                <motion.div
+                                                    key={transaction.id}
+                                                    initial={{ opacity: 0, scale: 0.98 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    transition={{ delay: idx * 0.05 }}
+                                                    className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-purple-200 dark:hover:border-purple-500/30 bg-white dark:bg-gray-800/40 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+                                                >
+                                                    {/* Icon & Type */}
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${transaction.transaction_type === "deposit"
+                                                            ? "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
+                                                            : "bg-rose-100 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400"
+                                                        }`}>
+                                                        {transaction.transaction_type === "deposit" ? <ArrowDownCircle className="w-5 h-5" /> : <ArrowUpCircle className="w-5 h-5" />}
+                                                    </div>
+
+                                                    {/* Main Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className={`text-sm font-bold ${transaction.transaction_type === "deposit" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+                                                                }`}>
+                                                                {transaction.transaction_type === "deposit" ? translations.deposit : translations.withdraw}
+                                                            </span>
+                                                            {transaction.is_full && (
+                                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                                                    {translations.full}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-1">
+                                                            <span className="flex items-center gap-1">
+                                                                <FileText className="w-3 h-3" />
+                                                                {formatPersianDate(transaction.transaction_date)}
+                                                            </span>
+                                                            {transaction.notes && (
+                                                                <span className="text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={transaction.notes}>
+                                                                    {transaction.notes}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Amount Values */}
+                                                    <div className="text-left flex-shrink-0 flex flex-col items-end">
+                                                        <div className={`text-lg font-bold font-mono tracking-tight ${transaction.transaction_type === "deposit" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                                            }`}>
+                                                            {transaction.transaction_type === "deposit" ? "+" : "-"}{transaction.total.toLocaleString()}
+                                                        </div>
+                                                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                                                            {transaction.amount.toLocaleString()} {transaction.currency} <span className="text-[10px] opacity-70">(@ {transaction.rate})</span>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            ))
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </motion.div>
                     </div>
                 </div>
 
                 {/* Account Form Modal */}
                 <AnimatePresence>
                     {isAccountModalOpen && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                            onClick={handleCloseAccountModal}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-                            >
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                                    {editingAccount ? translations.edit : translations.addNew}
-                                </h2>
-                                <form onSubmit={handleAccountSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            {translations.accountName}
+                        <Modal onClose={handleCloseAccountModal} title={editingAccount ? translations.edit : translations.addNew}>
+                            <form onSubmit={handleAccountSubmit} className="space-y-4">
+                                <Input label={translations.accountName} value={accountFormData.name} onChange={e => setAccountFormData({ ...accountFormData, name: e.target.value })} required autoFocus />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Select label={translations.currency} value={accountFormData.currency_id} onChange={e => setAccountFormData({ ...accountFormData, currency_id: e.target.value })}>
+                                        <option value="">انتخاب ارز (اختیاری)</option>
+                                        {currencies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </Select>
+                                    <Select label="دسته COA" value={accountFormData.coa_category_id} onChange={e => setAccountFormData({ ...accountFormData, coa_category_id: e.target.value })}>
+                                        <option value="">انتخاب دسته (اختیاری)</option>
+                                        {coaCategories.map(c => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
+                                    </Select>
+                                    <Input label="کد حساب" value={accountFormData.account_code} onChange={e => setAccountFormData({ ...accountFormData, account_code: e.target.value })} dir="ltr" />
+                                    <Select label="نوع حساب" value={accountFormData.account_type} onChange={e => setAccountFormData({ ...accountFormData, account_type: e.target.value })}>
+                                        <option value="">انتخاب نوع (اختیاری)</option>
+                                        <option value="Asset">دارایی</option>
+                                        <option value="Liability">بدهی</option>
+                                        <option value="Equity">حقوق صاحبان سهام</option>
+                                        <option value="Revenue">درآمد</option>
+                                        <option value="Expense">هزینه</option>
+                                    </Select>
+                                    <Input label={translations.initialBalance} type="number" step="0.01" value={accountFormData.initial_balance} onChange={e => setAccountFormData({ ...accountFormData, initial_balance: e.target.value })} dir="ltr" />
+                                    <div className="flex items-center h-full pt-6">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" checked={accountFormData.is_active} onChange={e => setAccountFormData({ ...accountFormData, is_active: e.target.checked })} className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">حساب فعال</span>
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={accountFormData.name}
-                                            onChange={(e) => setAccountFormData({ ...accountFormData, name: e.target.value })}
-                                            required
-                                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                            placeholder={translations.placeholders.accountName}
-                                            dir="rtl"
-                                        />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {translations.currency}
-                                            </label>
-                                            <select
-                                                value={accountFormData.currency_id}
-                                                onChange={(e) => setAccountFormData({ ...accountFormData, currency_id: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                dir="rtl"
-                                            >
-                                                <option value="">انتخاب ارز (اختیاری)</option>
-                                                {currencies.map((currency) => (
-                                                    <option key={currency.id} value={currency.id}>
-                                                        {currency.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                دسته COA
-                                            </label>
-                                            <select
-                                                value={accountFormData.coa_category_id}
-                                                onChange={(e) => setAccountFormData({ ...accountFormData, coa_category_id: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                dir="rtl"
-                                            >
-                                                <option value="">انتخاب دسته (اختیاری)</option>
-                                                {coaCategories.map((category: CoaCategory) => (
-                                                    <option key={category.id} value={category.id}>
-                                                        {category.code} - {category.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                کد حساب
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={accountFormData.account_code}
-                                                onChange={(e) => setAccountFormData({ ...accountFormData, account_code: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                placeholder="کد حساب (اختیاری)"
-                                                dir="ltr"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                نوع حساب
-                                            </label>
-                                            <select
-                                                value={accountFormData.account_type}
-                                                onChange={(e) => setAccountFormData({ ...accountFormData, account_type: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                dir="rtl"
-                                            >
-                                                <option value="">انتخاب نوع (اختیاری)</option>
-                                                <option value="Asset">دارایی</option>
-                                                <option value="Liability">بدهی</option>
-                                                <option value="Equity">حقوق صاحبان سهام</option>
-                                                <option value="Revenue">درآمد</option>
-                                                <option value="Expense">هزینه</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {translations.initialBalance}
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={accountFormData.initial_balance}
-                                                onChange={(e) => setAccountFormData({ ...accountFormData, initial_balance: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                placeholder="0"
-                                                dir="ltr"
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={accountFormData.is_active}
-                                                onChange={(e) => setAccountFormData({ ...accountFormData, is_active: e.target.checked })}
-                                                className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                            />
-                                            <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                حساب فعال
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            {translations.notes}
-                                        </label>
-                                        <textarea
-                                            value={accountFormData.notes}
-                                            onChange={(e) => setAccountFormData({ ...accountFormData, notes: e.target.value })}
-                                            rows={3}
-                                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200 resize-none"
-                                            placeholder={translations.placeholders.notes}
-                                            dir="rtl"
-                                        />
-                                    </div>
-                                    <div className="flex gap-3 pt-4">
-                                        <motion.button
-                                            type="button"
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={handleCloseAccountModal}
-                                            className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold rounded-xl transition-colors"
-                                        >
-                                            {translations.cancel}
-                                        </motion.button>
-                                        <motion.button
-                                            type="submit"
-                                            disabled={loading}
-                                            whileHover={{ scale: loading ? 1 : 1.05 }}
-                                            whileTap={{ scale: loading ? 1 : 0.95 }}
-                                            className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {loading ? (
-                                                <span className="flex items-center justify-center gap-2">
-                                                    <motion.div
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                                                    />
-                                                    {translations.save}
-                                                </span>
-                                            ) : (
-                                                translations.save
-                                            )}
-                                        </motion.button>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        </motion.div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.notes}</label>
+                                    <textarea
+                                        value={accountFormData.notes}
+                                        onChange={e => setAccountFormData({ ...accountFormData, notes: e.target.value })}
+                                        rows={3}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all resize-none"
+                                        placeholder={translations.placeholders.notes}
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                    <Button variant="secondary" onClick={handleCloseAccountModal} className="flex-1">{translations.cancel}</Button>
+                                    <Button type="submit" variant="primary" loading={loading} className="flex-1">{translations.save}</Button>
+                                </div>
+                            </form>
+                        </Modal>
                     )}
                 </AnimatePresence>
 
                 {/* Transaction Modal */}
                 <AnimatePresence>
                     {isTransactionModalOpen && selectedAccount && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                            onClick={handleCloseTransactionModal}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.9, opacity: 0 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-                            >
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                                    {transactionType === "deposit" ? translations.deposit : translations.withdraw} - {selectedAccount.name}
-                                </h2>
-                                <form onSubmit={handleTransactionSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="flex items-center gap-2 mb-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={transactionFormData.is_full}
-                                                onChange={(e) => {
-                                                    setTransactionFormData({
-                                                        ...transactionFormData,
-                                                        is_full: e.target.checked,
-                                                        amount: e.target.checked ? "" : transactionFormData.amount,
-                                                    });
-                                                }}
-                                                className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                            />
-                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                {translations.isFull}
-                                            </span>
-                                        </label>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {translations.currency}
-                                            </label>
-                                            <select
-                                                value={transactionFormData.currency}
-                                                onChange={(e) => setTransactionFormData({ ...transactionFormData, currency: e.target.value })}
-                                                required
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                dir="rtl"
-                                            >
-                                                <option value="">{translations.placeholders.currency}</option>
-                                                {currencies.map((currency) => (
-                                                    <option key={currency.id} value={currency.name}>
-                                                        {currency.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {translations.amount}
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={transactionFormData.amount}
-                                                onChange={(e) => setTransactionFormData({ ...transactionFormData, amount: e.target.value })}
-                                                disabled={transactionFormData.is_full}
-                                                required={!transactionFormData.is_full}
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                placeholder={translations.placeholders.amount}
-                                                dir="ltr"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {translations.rate}
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={transactionFormData.rate}
-                                                onChange={(e) => setTransactionFormData({ ...transactionFormData, rate: e.target.value })}
-                                                required
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
-                                                placeholder={translations.placeholders.rate}
-                                                dir="ltr"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                {translations.total}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={transactionFormData.is_full ? "محاسبه می‌شود" : transactionFormData.total}
-                                                readOnly
-                                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                dir="ltr"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            {translations.date}
-                                        </label>
-                                        <PersianDatePicker
-                                            value={transactionFormData.date}
-                                            onChange={(date) => setTransactionFormData({ ...transactionFormData, date })}
-                                            placeholder={translations.placeholders.date}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            {translations.notes}
-                                        </label>
-                                        <textarea
-                                            value={transactionFormData.notes}
-                                            onChange={(e) => setTransactionFormData({ ...transactionFormData, notes: e.target.value })}
-                                            rows={3}
-                                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200 resize-none"
-                                            placeholder={translations.placeholders.notes}
-                                            dir="rtl"
-                                        />
-                                    </div>
-                                    <div className="flex gap-3 pt-4">
-                                        <motion.button
-                                            type="button"
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={handleCloseTransactionModal}
-                                            className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold rounded-xl transition-colors"
-                                        >
-                                            {translations.cancel}
-                                        </motion.button>
-                                        <motion.button
-                                            type="submit"
-                                            disabled={loading}
-                                            whileHover={{ scale: loading ? 1 : 1.05 }}
-                                            whileTap={{ scale: loading ? 1 : 0.95 }}
-                                            className={`flex-1 px-4 py-3 font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                                transactionType === "deposit"
-                                                    ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-                                                    : "bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white"
-                                            }`}
-                                        >
-                                            {loading ? (
-                                                <span className="flex items-center justify-center gap-2">
-                                                    <motion.div
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                                                    />
-                                                    {translations.save}
-                                                </span>
-                                            ) : (
-                                                transactionType === "deposit" ? translations.deposit : translations.withdraw
-                                            )}
-                                        </motion.button>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        </motion.div>
+                        <Modal onClose={handleCloseTransactionModal} title={`${transactionType === 'deposit' ? translations.deposit : translations.withdraw} - ${selectedAccount.name}`}>
+                            <form onSubmit={handleTransactionSubmit} className="space-y-4">
+                                <label className="flex items-center gap-2 mb-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={transactionFormData.is_full}
+                                        onChange={(e) => setTransactionFormData({ ...transactionFormData, is_full: e.target.checked, amount: e.target.checked ? "" : transactionFormData.amount })}
+                                        className="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                    />
+                                    <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{translations.isFull}</span>
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Select label={translations.currency} value={transactionFormData.currency} onChange={e => setTransactionFormData({ ...transactionFormData, currency: e.target.value })} required>
+                                        <option value="">{translations.placeholders.currency}</option>
+                                        {currencies.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                    </Select>
+                                    <Input label={translations.amount} type="number" step="0.01" value={transactionFormData.amount} onChange={e => setTransactionFormData({ ...transactionFormData, amount: e.target.value })} disabled={transactionFormData.is_full} required={!transactionFormData.is_full} dir="ltr" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Input label={translations.rate} type="number" step="0.01" value={transactionFormData.rate} onChange={e => setTransactionFormData({ ...transactionFormData, rate: e.target.value })} required dir="ltr" />
+                                    <Input label={translations.total} value={transactionFormData.is_full ? "محاسبه می‌شود" : transactionFormData.total} readOnly dir="ltr" className="bg-gray-100 dark:bg-gray-800" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.date}</label>
+                                    <PersianDatePicker value={transactionFormData.date} onChange={date => setTransactionFormData({ ...transactionFormData, date })} required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{translations.notes}</label>
+                                    <textarea value={transactionFormData.notes} onChange={e => setTransactionFormData({ ...transactionFormData, notes: e.target.value })} rows={3} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all resize-none" />
+                                </div>
+                                <div className="flex gap-3 pt-4">
+                                    <Button variant="secondary" onClick={handleCloseTransactionModal} className="flex-1">{translations.cancel}</Button>
+                                    <Button type="submit" variant={transactionType === 'deposit' ? 'success' : 'danger'} loading={loading} className="flex-1">
+                                        {transactionType === 'deposit' ? translations.deposit : translations.withdraw}
+                                    </Button>
+                                </div>
+                            </form>
+                        </Modal>
                     )}
                 </AnimatePresence>
 
-                {/* Delete Confirmation Modal */}
+                {/* Delete Modal */}
                 <AnimatePresence>
                     {deleteConfirm && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-                            onClick={() => setDeleteConfirm(null)}
-                        >
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setDeleteConfirm(null)}>
                             <motion.div
                                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                                 animate={{ scale: 1, opacity: 1, y: 0 }}
                                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 w-full max-w-md border border-red-100 dark:border-red-900/30"
+                                onClick={e => e.stopPropagation()}
+                                className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-md border border-red-100 dark:border-red-900/30 text-center"
                             >
-                                <div className="flex justify-center mb-6">
-                                    <motion.div
-                                        animate={{
-                                            scale: [1, 1.1, 1],
-                                            rotate: [0, -5, 5, -5, 0]
-                                        }}
-                                        transition={{
-                                            duration: 0.5,
-                                            repeat: Infinity,
-                                            repeatDelay: 2
-                                        }}
-                                        className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg"
-                                    >
-                                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                    </motion.div>
+                                <div className="w-20 h-20 mx-auto mb-6 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
+                                    <AlertTriangle className="w-10 h-10" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-3">
-                                    {translations.delete}
-                                </h2>
-                                <p className="text-center text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                                    {translations.confirmDelete}
-                                </p>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{translations.delete}</h2>
+                                <p className="text-gray-600 dark:text-gray-400 mb-8">{translations.confirmDelete}</p>
                                 <div className="flex gap-3">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setDeleteConfirm(null)}
-                                        className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
-                                    >
-                                        {translations.cancel}
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => handleDelete(deleteConfirm)}
-                                        disabled={loading}
-                                        className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                                    >
-                                        {loading ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <motion.div
-                                                    animate={{ rotate: 360 }}
-                                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                    className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                                                />
-                                                در حال حذف...
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                                {translations.delete}
-                                            </span>
-                                        )}
-                                    </motion.button>
+                                    <Button variant="secondary" onClick={() => setDeleteConfirm(null)} className="flex-1">{translations.cancel}</Button>
+                                    <Button variant="danger" onClick={() => handleDelete(deleteConfirm)} loading={loading} className="flex-1">{translations.delete}</Button>
                                 </div>
                             </motion.div>
-                        </motion.div>
+                        </div>
                     )}
                 </AnimatePresence>
 
                 <Footer />
             </div>
         </div>
+    );
+}
+
+// Reuseable Components
+function Modal({ children, title, onClose }: { children: React.ReactNode, title: string, onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white dark:bg-[#1a1035] rounded-2xl shadow-2xl border border-gray-200 dark:border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+                <div className="sticky top-0 z-10 bg-white/10 dark:bg-[#1a1035] backdrop-blur-md border-b border-gray-100 dark:border-purple-500/10 p-5 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-gray-500 dark:text-gray-400">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="p-6">
+                    {children}
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
+function Input({ label, className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+    return (
+        <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{label}</label>
+            <input
+                className={`w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all ${className}`}
+                {...props}
+            />
+        </div>
+    );
+}
+
+function Select({ label, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label: string }) {
+    return (
+        <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{label}</label>
+            <select
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 transition-all appearance-none cursor-pointer"
+                dir="rtl"
+                {...props}
+            >
+                {children}
+            </select>
+        </div>
+    );
+}
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    variant?: 'primary' | 'secondary' | 'danger' | 'success';
+    loading?: boolean;
+}
+
+function Button({ children, variant = 'primary', loading, className = "", ...props }: ButtonProps) {
+    const variants = {
+        primary: "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg shadow-purple-500/20",
+        secondary: "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-white",
+        danger: "bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white shadow-lg shadow-red-500/20",
+        success: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/20",
+    };
+
+    const {
+        onAnimationStart,
+        onAnimationEnd,
+        onAnimationIteration,
+        onDragStart,
+        onDrag,
+        onDragEnd,
+        ...restProps
+    } = props;
+
+    return (
+        <motion.button
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
+            disabled={loading || props.disabled}
+            className={`px-6 py-3 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${variants[variant]} ${className}`}
+            {...restProps}
+        >
+            {loading && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+            {children}
+        </motion.button>
     );
 }
